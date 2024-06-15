@@ -1,7 +1,6 @@
 import ollama from 'ollama';
 import { ChromaClient } from 'chromadb';
-import { getConfig, readText } from './utilities.mjs';
-import { chunkTextBySentences } from './utilities.mjs';
+import { readText, getConfig, chunkTextBySentences } from './utilities.mjs';
 
 const chroma = new ChromaClient();
 
