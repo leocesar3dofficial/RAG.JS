@@ -4,6 +4,8 @@ Retrieval-Augmented Generation (RAG), JavaScript project.
 
 ## How-to
 
+Ollama and Chroma DB must be running.
+
 ### 1. Place corpus.txt besides the other files
 
 This file contains the text to be embedded.
