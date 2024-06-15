@@ -1,12 +1,7 @@
-import config from './config.json' assert { type: 'json' };
-import sentencize from '@stdlib/nlp-sentencize';
 import fs from 'fs';
 import path from 'path';
+import sentencize from '@stdlib/nlp-sentencize';
 import { fileURLToPath } from 'url';
-
-export function getConfig() {
-  return config;
-}
 
 export function readText(filename) {
   // Get the directory name of the current module
@@ -23,6 +18,10 @@ export function readText(filename) {
   } catch (err) {
     throw err;
   }
+}
+
+export function getConfig() {
+  return JSON.parse(readText('config.json'));
 }
 
 export function chunkTextBySentences(sourceText, sentencesPerChunk, overlap) {
