@@ -13,7 +13,7 @@ const collection = await chroma.getOrCreateCollection({
 });
 
 const { embedmodel } = getConfig();
-console.log(`Embedding chunks`);
+console.log(`Embedding chunks.`);
 const text = readText('corpus.txt');
 const chunks = chunkTextBySentences(text, 4, 1);
 

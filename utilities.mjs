@@ -15,7 +15,6 @@ export function readText(filename) {
 
   // Construct the file path
   const filePath = path.join(__dirname, filename);
-  console.log(filePath);
 
   // Read the file content synchronously
   try {
