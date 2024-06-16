@@ -1,11 +1,10 @@
 {
   "name": "rag",
   "version": "1.0.0",
-  "main": "search.mjs",
+  "main": "queryRAG.mjs",
   "scripts": {
     "type": "module",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node import.mjs"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
   "license": "ISC",
