@@ -28,7 +28,7 @@ if (query.length > 3) {
     model: mainModel,
     prompt: modelQuery,
     stream: true,
-    options: { num_ctx: 4096 },
+    options: { num_ctx: 4096, temperature: 0.5 },
   });
 
   console.log('\nAnswer:');

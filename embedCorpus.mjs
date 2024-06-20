@@ -22,21 +22,20 @@ const collection = await chroma.getOrCreateCollection({
 const fileList = getFileList(corpusDirectory);
 console.log(`Embedding chunks for ${fileList.length} files:`);
 
-let text = '';
-let chunks = '';
+let chunks = [];
 
-for (let i = 0; i < fileList.length; i++) {
-  console.log(`${i + 1}: ${fileList[i]}`);
-  text += getFileText(`./${fileList[i]}`);
-}
-
-chunks = chunkTextBySentences(text, 4, 1);
+fileList.forEach((file, index) => {
+  console.log(`${index + 1}: ${file}`);
+  const documentContent = getFileText(`./${file}`);
+  const sentences = chunkTextBySentences(documentContent, 4, 1);
+  chunks.push(...sentences);
+});
 
 for (const [index, chunk] of chunks.entries()) {
   const embed = (await ollama.embeddings({ model: embedModel, prompt: chunk }))
     .embedding;
 
-  await collection.upsert({
+  await collection.add({
     ids: [String(index)],
     embeddings: [embed],
     documents: [chunk],
