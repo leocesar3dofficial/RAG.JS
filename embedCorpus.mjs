@@ -31,9 +31,8 @@ console.log(`Embedding chunks for ${fileList.length} files:`);
 
 // Process each file asynchronously
 const promises = fileList.map(async (file, fileIndex) => {
-  console.log(`${fileIndex + 1}: ${file}`); // Log the file being processed
   const documentContent = getFileText(`./${file}`); // Read the file content
-  let chunks = chunkTextBySentences(documentContent, 4, 1); // Split content into chunks of 4 sentences
+  let chunks = chunkTextBySentences(documentContent, 8, 1); // Split content into chunks of n sentences with one overlaping sentence
 
   // Process each chunk in the file
   for (const [chunkIndex, chunk] of chunks.entries()) {
@@ -43,14 +42,14 @@ const promises = fileList.map(async (file, fileIndex) => {
     ).embedding;
 
     // Upsert the embedding into the collection
-    await collection.upsert({
+    collection.add({
       ids: [`${file}_${chunkIndex}`],
       embeddings: [embed],
       documents: [chunk],
     });
 
-    // Output a dot to indicate progress
-    process.stdout.write('.');
+    const completionPercent = (chunkIndex / chunks.length) * 100;
+    console.log(`${fileIndex + 1}. ${file}: ${completionPercent.toFixed()}%`);
   }
 });
 

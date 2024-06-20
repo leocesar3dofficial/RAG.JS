@@ -19,7 +19,7 @@ if (query.length > 3) {
   ).embedding;
 
   const relevantDocs = (
-    await collection.query({ queryEmbeddings: [queryEmbed], nResults: 8 })
+    await collection.query({ queryEmbeddings: [queryEmbed], nResults: 16 })
   ).documents[0].join('\n\n');
 
   const modelQuery = `I have this information:\n${relevantDocs}\nSo my question is:\n${query}`;
