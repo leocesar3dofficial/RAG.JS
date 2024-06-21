@@ -7,6 +7,7 @@ import {
   chunkTextBySentences,
 } from './utilities.mjs';
 
+console.time('Elapsed time');
 // Clear the console for a clean start
 console.clear();
 
@@ -56,3 +57,4 @@ const promises = fileList.map(async (file, fileIndex) => {
 // Wait for all files to be processed
 await Promise.all(promises);
 console.log('\nSuccessfully embedded the files into the Vector Database.');
+console.timeLog('Elapsed time');

@@ -2,6 +2,8 @@ import ollama from 'ollama';
 import { ChromaClient } from 'chromadb';
 import { getConfig } from './utilities.mjs';
 
+console.time('Response time');
+
 const { embedModel, mainModel } = getConfig();
 const chroma = new ChromaClient();
 const collection = await chroma.getCollection({
@@ -28,7 +30,7 @@ if (query.length > 3) {
     model: mainModel,
     prompt: modelQuery,
     stream: true,
-    options: { num_ctx: 4096, temperature: 0.5 },
+    options: { num_ctx: 4096, temperature: 0.6 },
   });
 
   console.log('\nAnswer:');
@@ -41,3 +43,6 @@ if (query.length > 3) {
     'Invalid input. Use this pattern: node queryRAG.mjs <your question>.\nThe input must be at least 3 characters long.'
   );
 }
+
+console.log();
+console.timeLog('Response time');
