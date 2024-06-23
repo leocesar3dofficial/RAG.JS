@@ -42,7 +42,7 @@ const promises = fileList.map(async (file, fileIndex) => {
       await ollama.embeddings({ model: embedModel, prompt: chunk })
     ).embedding;
 
-    // Upsert the embedding into the collection
+    // Add the embedding data into the collection
     collection.add({
       ids: [`${file}_${chunkIndex}`],
       embeddings: [embed],
