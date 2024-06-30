@@ -2,5 +2,5 @@
   "corpusPath": "./corpus",
   "collectionName": "rag_collection",
   "embedModel": "nomic-embed-text",
-  "mainModel": "llama3"
+  "mainModel": "qwen2"
 }

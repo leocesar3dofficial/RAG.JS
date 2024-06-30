@@ -47,7 +47,7 @@ const promises = fileList.map(async (file, fileIndex) => {
       ids: [`${file}_${chunkIndex}`],
       embeddings: [embed],
       documents: [chunk],
-      metadatas: [{ file: file, chunk: chunkIndex }],
+      metadatas: [{ file: file, chunk: chunkIndex + 1 }],
     });
 
     const completionPercent = (chunkIndex / chunks.length) * 100;
