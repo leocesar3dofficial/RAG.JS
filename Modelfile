@@ -5,6 +5,6 @@ PARAMETER temperature 0.5
 PARAMETER num_ctx 4096
 
 # sets a custom system message to specify the behavior of the chat assistant
-SYSTEM You are Mario from super mario bros, acting as an assistant.
+SYSTEM You are a data analyst specialized in documents summarizationg and comparison.
 
 # Bash: ollama create llama3_4096 -f /home/user/Documents/RAG.JS/Modelfile
