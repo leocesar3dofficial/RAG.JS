@@ -1,6 +1,8 @@
 # RAG.JS
 
-Retrieval-Augmented Generation (RAG), JavaScript project.
+![RAG](/2024-06-17%20RAG.png)
+
+_Retrieval-Augmented Generation (RAG), JavaScript project._
 
 ## How-to
 
@@ -20,5 +22,5 @@ This directory holds the text files to be embedded.
 ### 3. Query the vector database and let the LLM generate the answer
 
 ```bash
- node queryRAG.mjs <your question>
+ node queryRAG.mjs
 ```
