@@ -47,7 +47,7 @@ rl.question('Please enter your question: ', async (query) => {
         index + 1
       }\nMetadata:\nFile: ${fileName},\nChunk: ${
         metadata.chunk
-      },\nSimilarity score: ${similarityScore.toFixed(2)}
+      },\nSimilarity score: ${((1 - similarityScore) * 100).toFixed(2)}%
       \nDocument excerpt:\n${documentExcerpt}\n\n`; // Adding the metadata and document excerpt to the output string
     });
 
@@ -56,14 +56,14 @@ rl.question('Please enter your question: ', async (query) => {
     console.log('==============================');
 
     // Constructing the model query with the retrieved documents and the original query
-    const modelQuery = `I have this information:\n\n${output.trim()}\nSo my question is:\n${query}.\nPlease don't forget to cite the document name and its corresponding chunk number that you based your answer.`;
+    const modelQuery = `I have this information ordered from the most relevant to the least relevant excerpts, based on their Similarity score (higher percentage is better):\n\n${output.trim()}\nSo my question is:\n${query}.\nPlease don't forget to cite the document name and its corresponding chunk number that you based your answer.`;
 
     // Generating a response using the mainModel with the constructed model query and streaming the response
     const stream = await ollama.generate({
       model: mainModel,
       prompt: modelQuery,
       stream: true,
-      options: { num_ctx: 4096, temperature: 0.6 }, // Setting the options for the model
+      options: { num_ctx: 8192, temperature: 0.6 }, // Setting the options for the model
     });
 
     console.log('\nAnswer:');

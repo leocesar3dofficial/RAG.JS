@@ -1,10 +1,10 @@
 FROM llama3
 # sets the temperature to 1 [higher is more creative, lower is more coherent]
 PARAMETER temperature 0.5
-# sets the context window size to 4096, this controls how many tokens the LLM can use as context to generate the next token
-PARAMETER num_ctx 4096
+# sets the context window size to 8192 tokens, this controls how many tokens the LLM can use as context to generate the next token
+PARAMETER num_ctx 8192
 
 # sets a custom system message to specify the behavior of the chat assistant
 SYSTEM You are a data analyst specialized in documents summarizationg and comparison.
 
-# Bash: ollama create llama3_4096 -f /home/user/Documents/RAG.JS/Modelfile
+# Bash: ollama create llama3_8192 -f /home/user/Documents/RAG.JS/Modelfile

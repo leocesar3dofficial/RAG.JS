@@ -2,5 +2,27 @@
   "corpusPath": "./corpus",
   "collectionName": "rag_collection",
   "embedModel": "nomic-embed-text",
-  "mainModel": "qwen2"
+  "mainModel": "gemma2",
+  "modelDescriptions": [
+    {
+      "name": "gemma2",
+      "description": "General use, supposedly better than llama3. Context length of 8,192 tokens."
+    },
+    {
+      "name": "llama3",
+      "description": "General use. Context length of 8,192 tokens."
+    },
+    {
+      "name": "qwen2",
+      "description": "Good for coding and math. Context length of 128k tokens."
+    },
+    {
+      "name": "nomic-embed-text ",
+      "description": "High-performing open embedding model. Context length of 8,192 tokens."
+    },
+    {
+      "name": "llava",
+      "description": "Vision model, generates text description of an image. Image resolution up to 1344px in length or height."
+    }
+  ]
 }
