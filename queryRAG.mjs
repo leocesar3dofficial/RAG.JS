@@ -36,27 +36,35 @@ rl.question('Please enter your question: ', async (query) => {
       nResults: 8, // Number of results to retrieve
     });
 
-    let output = 'Returned documents:\n\n'; // Initializing the output string for the returned documents
-
-    // Looping through the metadata of the relevant documents and constructing the output string
-    relevantDocs.metadatas[0].forEach((metadata, index) => {
+    const output = relevantDocs.metadatas[0].map((metadata, index) => {
       const fileName = metadata.file.split('/').pop(); // Extracting the file name from the file path
       const documentExcerpt = relevantDocs.documents[0][index]; // Getting the document excerpt
       const similarityScore = relevantDocs.distances[0][index];
-      output += `Excerpt number: ${
-        index + 1
-      }\nMetadata:\nFile: ${fileName},\nChunk: ${
-        metadata.chunk
-      },\nSimilarity score: ${((1 - similarityScore) * 100).toFixed(2)}%
-      \nDocument excerpt:\n${documentExcerpt}\n\n`; // Adding the metadata and document excerpt to the output string
+
+      return {
+        excerptNumber: index + 1,
+        metadata: {
+          file: fileName,
+          chunk: metadata.chunk,
+          similarityScore: `${((1 - similarityScore) * 100).toFixed(2)}%`,
+        },
+        documentExcerpt: documentExcerpt,
+      };
     });
 
-    console.log('==============================');
-    console.log(output.trim()); // Displaying the output string
-    console.log('==============================');
+    // Convert the array of objects to a JSON string
+    const jsonOutput = JSON.stringify(output, null, 2); // The second parameter (null) is for the replacer function, and the third (2) is for pretty-printing with 2 spaces
+
+    console.log('Returned documents:\n');
+    console.log(jsonOutput); // Displaying the output string
+    console.log('\nEnd of documents.');
 
     // Constructing the model query with the retrieved documents and the original query
-    const modelQuery = `I have this information ordered from the most relevant to the least relevant excerpts, based on their Similarity score (higher percentage is better):\n\n${output.trim()}\nSo my question is:\n${query}.\nPlease don't forget to cite the document name and its corresponding chunk number that you based your answer.`;
+    const modelQuery = `I have this information, ordered from the most relevant to the least relevant excerpts, based on their Similarity score (higher percentage is better):
+    \n\n${jsonOutput}
+    \n\nSo my question is:
+    \n\n${query}.
+    \n\nPlease don't forget to cite, for each argument, the file and chunk.`;
 
     // Generating a response using the mainModel with the constructed model query and streaming the response
     const stream = await ollama.generate({
