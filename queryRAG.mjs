@@ -42,11 +42,13 @@ rl.question('Please enter your question: ', async (query) => {
     relevantDocs.metadatas[0].forEach((metadata, index) => {
       const fileName = metadata.file.split('/').pop(); // Extracting the file name from the file path
       const documentExcerpt = relevantDocs.documents[0][index]; // Getting the document excerpt
-      output += `Excerpt number ${
+      const similarityScore = relevantDocs.distances[0][index];
+      output += `Excerpt number: ${
         index + 1
-      }:\nMetadata:\nFile: ${fileName},\nChunk: ${
+      }\nMetadata:\nFile: ${fileName},\nChunk: ${
         metadata.chunk
-      }\nDocument excerpt:\n${documentExcerpt}\n\n`; // Adding the metadata and document excerpt to the output string
+      },\nSimilarity score: ${similarityScore.toFixed(2)}
+      \nDocument excerpt:\n${documentExcerpt}\n\n`; // Adding the metadata and document excerpt to the output string
     });
 
     console.log('==============================');
