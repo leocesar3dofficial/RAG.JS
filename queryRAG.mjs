@@ -3,25 +3,32 @@ import { ChromaClient } from 'chromadb';
 import { getConfig } from './utilities.mjs';
 import readline from 'readline';
 
-console.time('Response time'); // Starting a timer to measure the response time
+// Starting a timer to measure the response time
+console.time('Response time');
 
+// Setup input (keyboard) and output (console)
 const rl = readline.createInterface({
-  input: process.stdin, // Setting the input to the standard input (keyboard)
-  output: process.stdout, // Setting the output to the standard output (console)
+  input: process.stdin,
+  output: process.stdout,
 });
 
-const { embedModel, mainModel } = getConfig(); // Destructuring to get embedModel and mainModel from the configuration file
+const {
+  embedModel,
+  mainModel,
+  contextSize,
+  currentTemperature,
+  numberOfResults,
+} = getConfig();
 const chroma = new ChromaClient();
 const collection = await chroma.getCollection({
-  name: 'rag_collection', // Getting the collection named 'rag_collection' from the Chroma database
+  name: 'rag_collection',
 });
 
 rl.question('Please enter your question: ', async (query) => {
-  rl.close(); // Closing the readline interface after getting the input
+  rl.close();
+  console.clear(); // Clearing the console
 
   if (query.length > 3) {
-    // Checking if the input query is more than 3 characters long
-    console.clear(); // Clearing the console
     console.log(`Question:\n${query}`); // Displaying the question
     console.log();
 
@@ -33,59 +40,62 @@ rl.question('Please enter your question: ', async (query) => {
     // Querying the collection to get the relevant documents based on the query embedding
     const relevantDocs = await collection.query({
       queryEmbeddings: [queryEmbed],
-      nResults: 8, // Number of results to retrieve
+      nResults: numberOfResults,
     });
 
     const output = relevantDocs.metadatas[0].map((metadata, index) => {
-      const fileName = metadata.file.split('/').pop(); // Extracting the file name from the file path
-      const documentExcerpt = relevantDocs.documents[0][index]; // Getting the document excerpt
+      const fileName = metadata.file.split('/').pop();
+      const documentExcerpt = relevantDocs.documents[0][index];
       const similarityScore = relevantDocs.distances[0][index];
 
       return {
-        excerptNumber: index + 1,
+        excerpt: index + 1,
         metadata: {
           file: fileName,
           chunk: metadata.chunk,
           similarityScore: `${((1 - similarityScore) * 100).toFixed(2)}%`,
         },
-        documentExcerpt: documentExcerpt,
+        content: documentExcerpt,
       };
     });
 
-    // Convert the array of objects to a JSON string
-    const jsonOutput = JSON.stringify(output, null, 2); // The second parameter (null) is for the replacer function, and the third (2) is for pretty-printing with 2 spaces
+    // The second parameter (null) is for the replacer function, and the third (2) is for pretty-printing with 2 spaces
+    const jsonOutput = JSON.stringify(output, null, 2);
 
     console.log('Returned documents:\n');
-    console.log(jsonOutput); // Displaying the output string
+    console.log(jsonOutput);
     console.log('\nEnd of documents.');
 
-    // Constructing the model query with the retrieved documents and the original query
-    const modelQuery = `I have this information, ordered from the most relevant to the least relevant excerpts, based on their Similarity score (higher percentage is better):
+    // Construct the model query with the retrieved documents and the original query
+    const modelQuery = `I have this information:
     \n\n${jsonOutput}
     \n\nSo my question is:
     \n\n${query}.
-    \n\nPlease don't forget to cite, for each argument, the file and chunk.`;
+    \n\nPlease generate a detailed response exhausting every possible insight from the provided content while citing the relevant content as: filename.extension, chunk or content cited sources.`;
 
-    // Generating a response using the mainModel with the constructed model query and streaming the response
+    // Generate a response using the mainModel with the constructed model query and streaming the response
     const stream = await ollama.generate({
       model: mainModel,
       prompt: modelQuery,
       stream: true,
-      options: { num_ctx: 8192, temperature: 0.6 }, // Setting the options for the model
+      options: {
+        num_ctx: contextSize,
+        temperature: currentTemperature,
+      },
     });
 
     console.log('\nAnswer:');
 
-    // Looping through the chunks of the streamed response and writing them to the console
+    // Loop through the chunks of the streamed response and write them to the console
     for await (const chunk of stream) {
       process.stdout.write(chunk.response);
     }
   } else {
     console.error(
-      'Invalid input. The input must be at least 3 characters long.' // Error message for invalid input
+      'Invalid input. The input must be at least 3 characters long.'
     );
   }
 
   console.log('\n\n==============================');
-  console.timeLog('Response time'); // Logging the elapsed time
+  console.timeLog('Response time');
 });
