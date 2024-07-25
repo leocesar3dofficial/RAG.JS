@@ -3,8 +3,24 @@ import { ChromaClient } from 'chromadb';
 import { getConfig } from './utilities.mjs';
 import readline from 'readline';
 
-// Starting a timer to measure the response time
-console.time('Response time');
+function formatDuration(ns) {
+  let ms = Math.floor(ns / 1000000);
+  let seconds = Math.floor(ms / 1000);
+  ms = ms % 1000;
+  let minutes = Math.floor(seconds / 60);
+  seconds = seconds % 60;
+  let hours = Math.floor(minutes / 60);
+  minutes = minutes % 60;
+
+  // Create an array to hold the formatted time parts
+  let parts = [];
+  if (hours > 0) parts.push(`${hours}h`);
+  if (minutes > 0 || hours > 0) parts.push(`${minutes}m`);
+  if (seconds > 0 || minutes > 0 || hours > 0) parts.push(`${seconds}s`);
+  parts.push(`${ms}ms`);
+
+  return parts.join(' ');
+}
 
 // Setup input (keyboard) and output (console)
 const rl = readline.createInterface({
@@ -12,6 +28,7 @@ const rl = readline.createInterface({
   output: process.stdout,
 });
 
+// Get configuration values
 const {
   embedModel,
   mainModel,
@@ -19,16 +36,21 @@ const {
   currentTemperature,
   numberOfResults,
 } = getConfig();
+
+// Get Chroma DB collection
 const chroma = new ChromaClient();
 const collection = await chroma.getCollection({
   name: 'rag_collection',
 });
 
+// Ask question
 rl.question('Please enter your question: ', async (query) => {
   rl.close();
-  console.clear(); // Clearing the console
+  process.stdout.write('\x1Bc'); // Clear the console
 
   if (query.length > 3) {
+    // Starting a timer to measure the response time
+    console.time('Execution Time');
     console.log(`Question:\n${query}`); // Displaying the question
     console.log();
 
@@ -71,7 +93,7 @@ rl.question('Please enter your question: ', async (query) => {
     \n\n${jsonOutput}
     \n\nSo my question is:
     \n\n${query}.
-    \n\nPlease generate a detailed response exhausting every possible insight from the provided content while citing the relevant content as: filename.extension, chunk or content cited sources.`;
+    \n\nPlease generate a detailed response exhausting every possible insight from the provided content while citing the relevant content as: (filename.extension, chunk).`;
 
     // Generate a response using the mainModel with the constructed model query and streaming the response
     const stream = await ollama.generate({
@@ -89,6 +111,21 @@ rl.question('Please enter your question: ', async (query) => {
     // Loop through the chunks of the streamed response and write them to the console
     for await (const chunk of stream) {
       process.stdout.write(chunk.response);
+
+      if (chunk.done) {
+        console.log('\n\n==============================');
+        console.log('Prompt Tokens:', chunk.prompt_eval_count);
+        console.log('Response Tokens:', chunk.eval_count);
+        console.log(
+          'Loading the Model Time:',
+          formatDuration(chunk.load_duration)
+        );
+        console.log(
+          'Prompt Evaluation Time:',
+          formatDuration(chunk.prompt_eval_duration)
+        );
+        console.log('Response Time:', formatDuration(chunk.total_duration));
+      }
     }
   } else {
     console.error(
@@ -96,6 +133,6 @@ rl.question('Please enter your question: ', async (query) => {
     );
   }
 
-  console.log('\n\n==============================');
-  console.timeLog('Response time');
+  console.log('==============================');
+  console.timeLog('Execution Time');
 });

@@ -2,18 +2,14 @@
   "corpusPath": "./corpus",
   "collectionName": "rag_collection",
   "embedModel": "nomic-embed-text",
-  "mainModel": "llama3",
+  "mainModel": "llama3.1",
   "contextSize": 4096,
   "currentTemperature": 0.2,
   "numberOfResults": 16,
   "modelDescriptions": [
     {
-      "name": "gemma2",
-      "description": "General use, supposedly better than llama3. Context length of 8,192 tokens."
-    },
-    {
-      "name": "llama3",
-      "description": "General use. Context length of 8,192 tokens."
+      "name": "llama3.1",
+      "description": "General use. Context length of 128k tokens."
     },
     {
       "name": "qwen2",
