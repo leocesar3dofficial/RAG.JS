@@ -5,7 +5,7 @@
   "mainModel": "llama3.1",
   "contextSize": 4096,
   "currentTemperature": 0.2,
-  "numberOfResults": 16,
+  "numberOfResults": 8,
   "modelDescriptions": [
     {
       "name": "llama3.1",

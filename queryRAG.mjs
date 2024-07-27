@@ -46,6 +46,7 @@ const collection = await chroma.getCollection({
 // Ask question
 rl.question('Please enter your question: ', async (query) => {
   rl.close();
+
   process.stdout.write('\x1Bc'); // Clear the console
 
   if (query.length > 3) {
@@ -71,13 +72,12 @@ rl.question('Please enter your question: ', async (query) => {
       const similarityScore = relevantDocs.distances[0][index];
 
       return {
-        excerpt: index + 1,
-        metadata: {
+        fragment_metadata: {
           file: fileName,
           chunk: metadata.chunk,
-          similarityScore: `${((1 - similarityScore) * 100).toFixed(2)}%`,
+          similarity_score: `${((1 - similarityScore) * 100).toFixed(2)}%`,
         },
-        content: documentExcerpt,
+        fragment: documentExcerpt,
       };
     });
 
@@ -92,8 +92,8 @@ rl.question('Please enter your question: ', async (query) => {
     const modelQuery = `I have this information:
     \n\n${jsonOutput}
     \n\nSo my question is:
-    \n\n${query}.
-    \n\nPlease generate a detailed response exhausting every possible insight from the provided content while citing the relevant content as: (filename.extension, chunk).`;
+    \n\n${query}
+    \n\nPlease generate a response from the provided fragments while citing the relevant fragment metadata as: (file, chunk).`;
 
     // Generate a response using the mainModel with the constructed model query and streaming the response
     const stream = await ollama.generate({
