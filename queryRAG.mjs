@@ -72,12 +72,10 @@ rl.question('Please enter your question: ', async (query) => {
       const similarityScore = relevantDocs.distances[0][index];
 
       return {
-        fragment_metadata: {
-          file: fileName,
-          chunk: metadata.chunk,
-          similarity_score: `${((1 - similarityScore) * 100).toFixed(2)}%`,
-        },
-        fragment: documentExcerpt,
+        file: fileName,
+        chunk: metadata.chunk,
+        similarity_score: `${((1 - similarityScore) * 100).toFixed(2)}%`,
+        text: documentExcerpt,
       };
     });
 
