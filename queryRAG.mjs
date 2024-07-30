@@ -12,7 +12,6 @@ function formatDuration(ns) {
   let hours = Math.floor(minutes / 60);
   minutes = minutes % 60;
 
-  // Create an array to hold the formatted time parts
   let parts = [];
   if (hours > 0) parts.push(`${hours}h`);
   if (minutes > 0 || hours > 0) parts.push(`${minutes}m`);
@@ -22,13 +21,11 @@ function formatDuration(ns) {
   return parts.join(' ');
 }
 
-// Setup input (keyboard) and output (console)
 const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout,
 });
 
-// Get configuration values
 const {
   embedModel,
   mainModel,
@@ -37,100 +34,96 @@ const {
   numberOfResults,
 } = getConfig();
 
-// Get Chroma DB collection
 const chroma = new ChromaClient();
 const collection = await chroma.getCollection({
   name: 'rag_collection',
 });
 
-// Ask question
-rl.question('Please enter your question: ', async (query) => {
-  rl.close();
+async function handleQuery() {
+  rl.question('Please enter your question: ', async (query) => {
+    process.stdout.write('\x1Bc');
 
-  process.stdout.write('\x1Bc'); // Clear the console
+    if (query.length > 3) {
+      console.time('Execution Time');
+      console.log(`Question:\n${query}\n`);
 
-  if (query.length > 3) {
-    // Starting a timer to measure the response time
-    console.time('Execution Time');
-    console.log(`Question:\n${query}`); // Displaying the question
-    console.log();
+      const queryEmbed = (
+        await ollama.embeddings({ model: embedModel, prompt: query })
+      ).embedding;
 
-    // Getting the embedding for the query using the embedModel
-    const queryEmbed = (
-      await ollama.embeddings({ model: embedModel, prompt: query })
-    ).embedding;
+      const relevantDocs = await collection.query({
+        queryEmbeddings: [queryEmbed],
+        nResults: numberOfResults,
+      });
 
-    // Querying the collection to get the relevant documents based on the query embedding
-    const relevantDocs = await collection.query({
-      queryEmbeddings: [queryEmbed],
-      nResults: numberOfResults,
-    });
+      const output = relevantDocs.metadatas[0].map((metadata, index) => {
+        const fileName = metadata.file.split('/').pop();
+        const documentExcerpt = relevantDocs.documents[0][index];
+        const similarityScore = relevantDocs.distances[0][index];
 
-    const output = relevantDocs.metadatas[0].map((metadata, index) => {
-      const fileName = metadata.file.split('/').pop();
-      const documentExcerpt = relevantDocs.documents[0][index];
-      const similarityScore = relevantDocs.distances[0][index];
+        return {
+          file: fileName,
+          chunk: metadata.chunk,
+          similarity_score: `${((1 - similarityScore) * 100).toFixed(2)}%`,
+          text: documentExcerpt,
+        };
+      });
 
-      return {
-        file: fileName,
-        chunk: metadata.chunk,
-        similarity_score: `${((1 - similarityScore) * 100).toFixed(2)}%`,
-        text: documentExcerpt,
-      };
-    });
+      const jsonOutput = JSON.stringify(output, null, 2);
 
-    // The second parameter (null) is for the replacer function, and the third (2) is for pretty-printing with 2 spaces
-    const jsonOutput = JSON.stringify(output, null, 2);
+      console.log('Returned documents:\n');
+      console.log(jsonOutput);
+      console.log('\nEnd of documents.');
 
-    console.log('Returned documents:\n');
-    console.log(jsonOutput);
-    console.log('\nEnd of documents.');
+      const modelQuery = `I have this information:
+      \n\n${jsonOutput}
+      \n\nSo my question is:
+      \n\n${query}
+      \n\nPlease generate a response from the provided fragments while citing the relevant fragment metadata as: (file, chunk).`;
 
-    // Construct the model query with the retrieved documents and the original query
-    const modelQuery = `I have this information:
-    \n\n${jsonOutput}
-    \n\nSo my question is:
-    \n\n${query}
-    \n\nPlease generate a response from the provided fragments while citing the relevant fragment metadata as: (file, chunk).`;
+      const stream = await ollama.generate({
+        model: mainModel,
+        prompt: modelQuery,
+        stream: true,
+        options: {
+          num_ctx: contextSize,
+          temperature: currentTemperature,
+        },
+      });
 
-    // Generate a response using the mainModel with the constructed model query and streaming the response
-    const stream = await ollama.generate({
-      model: mainModel,
-      prompt: modelQuery,
-      stream: true,
-      options: {
-        num_ctx: contextSize,
-        temperature: currentTemperature,
-      },
-    });
+      console.log('\nAnswer:');
 
-    console.log('\nAnswer:');
+      for await (const chunk of stream) {
+        process.stdout.write(chunk.response);
 
-    // Loop through the chunks of the streamed response and write them to the console
-    for await (const chunk of stream) {
-      process.stdout.write(chunk.response);
-
-      if (chunk.done) {
-        console.log('\n\n==============================');
-        console.log('Prompt Tokens:', chunk.prompt_eval_count);
-        console.log('Response Tokens:', chunk.eval_count);
-        console.log(
-          'Loading the Model Time:',
-          formatDuration(chunk.load_duration)
-        );
-        console.log(
-          'Prompt Evaluation Time:',
-          formatDuration(chunk.prompt_eval_duration)
-        );
-        console.log('Response Time:', formatDuration(chunk.total_duration));
+        if (chunk.done) {
+          console.log('\n\n==============================');
+          console.log('Prompt Tokens:', chunk.prompt_eval_count);
+          console.log('Response Tokens:', chunk.eval_count);
+          console.log(
+            'Loading the Model Time:',
+            formatDuration(chunk.load_duration)
+          );
+          console.log(
+            'Prompt Evaluation Time:',
+            formatDuration(chunk.prompt_eval_duration)
+          );
+          console.log('Response Time:', formatDuration(chunk.total_duration));
+        }
       }
-    }
-  } else {
-    console.error(
-      'Invalid input. The input must be at least 3 characters long.'
-    );
-  }
 
-  console.log('==============================');
-  console.timeLog('Execution Time');
-});
+      console.log('==============================');
+      console.timeEnd('Execution Time');
+    } else {
+      console.error(
+        'Invalid input. The input must be at least 3 characters long.'
+      );
+    }
+
+    // Recursive call to handle next query
+    handleQuery();
+  });
+}
+
+// Start the first query
+handleQuery();
