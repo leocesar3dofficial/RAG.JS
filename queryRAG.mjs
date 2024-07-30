@@ -39,6 +39,8 @@ const collection = await chroma.getCollection({
   name: 'rag_collection',
 });
 
+const chatMessages = [];
+
 async function handleQuery() {
   rl.question('Please enter your question: ', async (query) => {
     process.stdout.write('\x1Bc');
@@ -71,19 +73,21 @@ async function handleQuery() {
 
       const jsonOutput = JSON.stringify(output, null, 2);
 
-      console.log('Returned documents:\n');
-      console.log(jsonOutput);
-      console.log('\nEnd of documents.');
+      // console.log('Returned documents:\n');
+      // console.log(jsonOutput);
+      // console.log('\nEnd of documents.');
 
       const modelQuery = `I have this information:
       \n\n${jsonOutput}
+      \n\nPlease generate a response from the provided fragments while citing the relevant fragment metadata as: (file, chunk).
       \n\nSo my question is:
-      \n\n${query}
-      \n\nPlease generate a response from the provided fragments while citing the relevant fragment metadata as: (file, chunk).`;
+      \n\n${query}`;
 
-      const stream = await ollama.generate({
+      chatMessages.push({ role: 'user', content: modelQuery });
+
+      const stream = await ollama.chat({
         model: mainModel,
-        prompt: modelQuery,
+        messages: chatMessages,
         stream: true,
         options: {
           num_ctx: contextSize,
@@ -92,11 +96,18 @@ async function handleQuery() {
       });
 
       console.log('\nAnswer:');
+      let assistantResponse = '';
 
       for await (const chunk of stream) {
-        process.stdout.write(chunk.response);
+        process.stdout.write(chunk.message.content);
+        assistantResponse += chunk.message.content;
 
         if (chunk.done) {
+          chatMessages.push({
+            role: 'assistant',
+            content: assistantResponse,
+          });
+
           console.log('\n\n==============================');
           console.log('Prompt Tokens:', chunk.prompt_eval_count);
           console.log('Response Tokens:', chunk.eval_count);
