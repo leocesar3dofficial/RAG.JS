@@ -66,7 +66,7 @@ async function handleQuery() {
         return {
           file: fileName,
           chunk: metadata.chunk,
-          similarity_score: `${((1 - similarityScore) * 100).toFixed(2)}%`,
+          relevance: `${((1 - similarityScore) * 100).toFixed(2)}%`,
           text: documentExcerpt,
         };
       });
