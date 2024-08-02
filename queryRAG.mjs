@@ -34,60 +34,103 @@ const {
   numberOfResults,
 } = getConfig();
 
+const tools = [
+  {
+    description:
+      'This tool is triggered if the user mentions or ask to retrieve documents.',
+    function_name: 'retreiveFromVectorDB',
+    parameters: [
+      {
+        user_query: '<user query>',
+      },
+    ],
+  },
+];
+
+const tools_response_format = {
+  tools: [
+    {
+      function_name: 'tool_name_example_1',
+      parameters: [
+        { parameter_1: 'user input 1' },
+        { parameter_2: 'user input 2' },
+      ],
+    },
+  ],
+};
+
 const chroma = new ChromaClient();
 const collection = await chroma.getCollection({
   name: 'rag_collection',
 });
 
+async function retreiveFromVectorDB(query) {
+  const queryEmbed = (
+    await ollama.embeddings({ model: embedModel, prompt: query })
+  ).embedding;
+
+  const relevantDocs = await collection.query({
+    queryEmbeddings: [queryEmbed],
+    nResults: numberOfResults,
+  });
+
+  const output = relevantDocs.metadatas[0].map((metadata, index) => {
+    const fileName = metadata.file.split('/').pop();
+    const documentExcerpt = relevantDocs.documents[0][index];
+    const similarityScore = relevantDocs.distances[0][index];
+
+    return {
+      file: fileName,
+      chunk: metadata.chunk,
+      relevance: `${((1 - similarityScore) * 100).toFixed(2)}%`,
+      text: documentExcerpt,
+    };
+  });
+
+  const jsonOutput = JSON.stringify(output, null, 2);
+
+  // console.log('Returned documents:\n');
+  // console.log(jsonOutput);
+  // console.log('\nEnd of documents.');
+
+  return jsonOutput;
+}
+
 const chatMessages = [];
 
-async function handleQuery() {
+async function handleChat() {
   rl.question('Please enter your question: ', async (query) => {
     process.stdout.write('\x1Bc');
 
-    if (query.length > 3) {
+    if (query.length >= 3) {
       console.time('Execution Time');
       console.log(`Question:\n${query}\n`);
 
-      const queryEmbed = (
-        await ollama.embeddings({ model: embedModel, prompt: query })
-      ).embedding;
+      const results = retreiveFromVectorDB(query);
 
-      const relevantDocs = await collection.query({
-        queryEmbeddings: [queryEmbed],
-        nResults: numberOfResults,
-      });
+      // const modelQuery = `I have this information:
+      // \n\n${results}
+      // \n\nPlease generate a response from the provided fragments while citing the relevant fragment metadata as: (file, chunk).
+      // \n\nSo my question is:
+      // \n\n${query}`;
 
-      const output = relevantDocs.metadatas[0].map((metadata, index) => {
-        const fileName = metadata.file.split('/').pop();
-        const documentExcerpt = relevantDocs.documents[0][index];
-        const similarityScore = relevantDocs.distances[0][index];
+      const modelQuery = `
+      This is our conversation so far:
+      \n\n${JSON.stringify(chatMessages, null, 2)}
+      \n\nThe user query is:
+      \n\n${query}
+      \n\nYou have this tools at your disposal: ${JSON.stringify(tools)}
+      \n\nIf you see the need to use one or more tools answer in this example output format as JSON, otherwise answer normally:
+      \n\n:${JSON.stringify(tools_response_format)}
+      \n\nSo if the user invoke a tool, you must replace the values of the tool parameters with the provided information contained in the user query.
+      `;
 
-        return {
-          file: fileName,
-          chunk: metadata.chunk,
-          relevance: `${((1 - similarityScore) * 100).toFixed(2)}%`,
-          text: documentExcerpt,
-        };
-      });
+      chatMessages.push({ role: 'user', content: query });
 
-      const jsonOutput = JSON.stringify(output, null, 2);
-
-      // console.log('Returned documents:\n');
-      // console.log(jsonOutput);
-      // console.log('\nEnd of documents.');
-
-      const modelQuery = `I have this information:
-      \n\n${jsonOutput}
-      \n\nPlease generate a response from the provided fragments while citing the relevant fragment metadata as: (file, chunk).
-      \n\nSo my question is:
-      \n\n${query}`;
-
-      chatMessages.push({ role: 'user', content: modelQuery });
-
-      const stream = await ollama.chat({
+      const stream = await ollama.generate({
         model: mainModel,
-        messages: chatMessages,
+        system: 'Please keep your answer as brief as possible.',
+        prompt: modelQuery,
         stream: true,
         options: {
           num_ctx: contextSize,
@@ -97,16 +140,25 @@ async function handleQuery() {
 
       console.log('\nAnswer:');
       let assistantResponse = '';
+      let responseCount = 0;
 
       for await (const chunk of stream) {
-        process.stdout.write(chunk.message.content);
-        assistantResponse += chunk.message.content;
+        process.stdout.write(chunk.response);
+        responseCount++;
+
+        if (responseCount < 30) {
+          assistantResponse += chunk.response;
+        }
 
         if (chunk.done) {
           chatMessages.push({
             role: 'assistant',
             content: assistantResponse,
           });
+
+          if (chatMessages.length >= 16) {
+            chatMessages.splice(0, 2);
+          }
 
           console.log('\n\n==============================');
           console.log('Prompt Tokens:', chunk.prompt_eval_count);
@@ -132,9 +184,9 @@ async function handleQuery() {
     }
 
     // Recursive call to handle next query
-    handleQuery();
+    handleChat();
   });
 }
 
 // Start the first query
-handleQuery();
+handleChat();
