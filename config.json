@@ -2,22 +2,24 @@
   "corpusPath": "./corpus",
   "collectionName": "rag_collection",
   "embedModel": "nomic-embed-text",
-  "mainModel": "gemma2:2b-instruct-q2_K",
+  "mainModel": "llama3.1",
   "contextSize": 4096,
   "currentTemperature": 0.1,
-  "numberOfResults": 3,
+  "numberOfResults": 12,
+  "chatMaxMessages": 30,
+  "assistantMaxMessageSize": 60,
   "modelDescriptions": [
     {
       "name": "llama3.1",
       "description": "General use. Context length of 128k tokens."
     },
     {
-      "name": "qwen2",
-      "description": "Good for coding and math. Context length of 128k tokens."
-    },
-    {
       "name": "gemma2:2b-instruct-q2_K",
       "description": "Small model to use with CPU only devices. Context length of 8,192 tokens."
+    },
+    {
+      "name": "qwen2",
+      "description": "Good for coding and math. Context length of 128k tokens."
     },
     {
       "name": "nomic-embed-text",

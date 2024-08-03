@@ -9,7 +9,13 @@ import {
   calculator,
 } from './tools.mjs';
 
-const { mainModel, contextSize, currentTemperature } = getConfig();
+const {
+  mainModel,
+  contextSize,
+  currentTemperature,
+  chatMaxMessages,
+  assistantMaxMessageSize,
+} = getConfig();
 const chatMessages = [];
 
 const rl = readline.createInterface({
@@ -40,25 +46,30 @@ async function getToolResponse(query) {
 }
 
 async function executeTools(cleanedResponse) {
+  const toolsResponse = [];
+
   try {
     const jsonObject = JSON.parse(cleanedResponse);
+
     const availableFunctions = {
       retreiveFromVectorDB: retreiveFromVectorDB,
       calculator: calculator,
     };
 
-    return await Promise.all(
-      jsonObject.map(async (tool) => {
-        const functionToCall = availableFunctions[tool.function_name];
-        if (typeof functionToCall === 'function') {
-          console.log(`Invoked tool: ${tool.function_name}`);
-          return await functionToCall(tool.parameters);
-        }
-      })
-    );
+    for (const tool of jsonObject) {
+      const functionToCall = availableFunctions[tool.function_name];
+
+      if (typeof functionToCall === 'function') {
+        console.log(`Invoked tool: ${tool.function_name}`);
+        const response = await functionToCall(tool.parameters);
+        toolsResponse.push(response);
+      }
+    }
+
+    return toolsResponse;
   } catch (error) {
     console.error(`An error occurred during tool execution: ${error}`);
-    return [];
+    return toolsResponse;
   }
 }
 
@@ -68,14 +79,14 @@ async function generateResponse(query, toolResults) {
   \n\n${JSON.stringify(chatMessages, null, 2)}
   \n\nTool results (if any):
   \n\n${toolResults.join('\n')}
-  \n\nPlease answer this question with the provided information (if any):
+  \n\nPlease answer the following question considering the provided information (if any):
   \n\n${query}
   `;
 
   return ollama.generate({
     model: mainModel,
     system:
-      'You are a helpful assistant. Only answer based on the provided information.',
+      'You are a helpful assistant. Only answer based on the provided information. Please give a detailed answer.',
     prompt: chatQuery,
     stream: true,
     options: {
@@ -102,6 +113,7 @@ async function handleChat() {
         .replace('```', '')
         .replace(/^:/, '')
         .replace(/,\s*([\]}])/g, '$1')
+        .replace(/\[:/g, '[')
         .trim();
 
       let toolResults = [];
@@ -120,7 +132,7 @@ async function handleChat() {
         process.stdout.write(chunk.response);
         responseCount++;
 
-        if (responseCount < 30) {
+        if (responseCount < assistantMaxMessageSize) {
           assistantResponse += chunk.response;
         }
 
@@ -130,7 +142,7 @@ async function handleChat() {
             content: assistantResponse,
           });
 
-          if (chatMessages.length > 15) {
+          if (chatMessages.length > chatMaxMessages) {
             chatMessages.splice(0, 2);
           }
 
