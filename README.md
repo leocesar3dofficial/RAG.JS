@@ -22,5 +22,5 @@ This directory holds the text files to be embedded.
 ### 3. Query the vector database and let the LLM generate the answer
 
 ```bash
- node queryRAG.mjs
+ node queryAI.mjs
 ```

@@ -5,7 +5,7 @@
   "mainModel": "gemma2:2b-instruct-q2_K",
   "contextSize": 4096,
   "currentTemperature": 0.1,
-  "numberOfResults": 8,
+  "numberOfResults": 3,
   "modelDescriptions": [
     {
       "name": "llama3.1",
@@ -16,7 +16,11 @@
       "description": "Good for coding and math. Context length of 128k tokens."
     },
     {
-      "name": "nomic-embed-text ",
+      "name": "gemma2:2b-instruct-q2_K",
+      "description": "Small model to use with CPU only devices. Context length of 8,192 tokens."
+    },
+    {
+      "name": "nomic-embed-text",
       "description": "High-performing open embedding model. Context length of 8,192 tokens."
     },
     {
