@@ -6,7 +6,7 @@ import {
   tools,
   tools_response_format,
   retreiveFromVectorDB,
-  calculator
+  calculator,
 } from './tools.mjs';
 
 const { mainModel, contextSize, currentTemperature } = getConfig();
@@ -14,29 +14,22 @@ const chatMessages = [];
 
 const rl = readline.createInterface({
   input: process.stdin,
-  output: process.stdout
+  output: process.stdout,
 });
 
 async function handleChat() {
-  rl.question('Please enter your question: ', async (query) => {
+  rl.question('You: ', async (query) => {
     process.stdout.write('\x1Bc');
 
-    if (query.length >= 3) {
+    if (query.length > 2) {
       console.time('Execution Time');
       console.log(`Question:\n${query}\n`);
-
-      // const ragQuery = `I have this information:
-      // \n\nThe user question is:
-      // \n\n${query}
-      // \n\nPlease generate a response from the provided fragments bellow while citing the relevant metadata as: (file, chunk).
-      // \n\n${result}
-      // `;
 
       const toolQuery = `
       \n\nThe user query is:
       \n\n${query}
       \n\nYou have this tools at your disposal: ${JSON.stringify(tools)}
-      \n\nIf you see the need to use one or more tools answer in this example output format as JSON, otherwise answer normally:
+      \n\nAnswer in this example JSON format if you see the need to use one or more tools:
       \n\n:${JSON.stringify(tools_response_format)}
       \n\nSo if the user invoke a tool, you must replace the values of the tool parameters with the provided information contained in the user query.
       `;
@@ -45,15 +38,16 @@ async function handleChat() {
 
       const tools_response = await ollama.generate({
         model: mainModel,
-        system: 'Please keep your answer as brief as possible.',
+        system: 'Please keep your answers as brief as possible.',
         prompt: toolQuery,
         stream: false,
         options: {
           num_ctx: contextSize,
-          temperature: currentTemperature
-        }
+          temperature: currentTemperature,
+        },
       });
 
+      console.log(`Tools response:\n${tools_response.response}`);
       const cleanedResponse = tools_response.response
         .replace('```json', '')
         .replace('```', '')
@@ -61,26 +55,28 @@ async function handleChat() {
         .replace(/,\s*([\]}])/g, '$1')
         .trim();
 
-      let jsonObject = [];
+      const toolResults = [];
 
-      try {
-        jsonObject = JSON.parse(cleanedResponse);
-      } catch (error) {
-        console.error('Invalid JSON string:', error.message);
-        jsonObject = [];
-      }
+      if (cleanedResponse.startsWith('[') && cleanedResponse.endsWith(']')) {
+        try {
+          const jsonObject = JSON.parse(cleanedResponse);
 
-      const availableFunctions = {
-        retreiveFromVectorDB: retreiveFromVectorDB,
-        calculator: calculator
-      };
+          const availableFunctions = {
+            retreiveFromVectorDB: retreiveFromVectorDB,
+            calculator: calculator,
+          };
 
-      let toolResults = [];
+          for (const tool of jsonObject) {
+            const functionToCall = availableFunctions[tool.function_name];
 
-      for (const tool of jsonObject) {
-        const functionToCall = availableFunctions[tool.function_name];
-        console.log(tool.function_name);
-        toolResults.push(await functionToCall(tool.parameters));
+            if (typeof functionToCall === 'function') {
+              console.log(`Invoked tool: ${tool.function_name}`);
+              toolResults.push(await functionToCall(tool.parameters));
+            }
+          }
+        } catch (error) {
+          console.log(`An error occurred: ${error}`);
+        }
       }
 
       const chatQuery = `
@@ -94,16 +90,17 @@ async function handleChat() {
 
       const stream = await ollama.generate({
         model: mainModel,
-        system: 'Please give thorough and detailed answers.',
+        system:
+          'You are a helpful assistant. Only answer based on the provided information.',
         prompt: chatQuery,
         stream: true,
         options: {
           num_ctx: contextSize,
-          temperature: currentTemperature
-        }
+          temperature: currentTemperature,
+        },
       });
 
-      console.log('\nAnswer:');
+      console.log('\nAssistant:');
       let assistantResponse = '';
       let responseCount = 0;
 
@@ -118,7 +115,7 @@ async function handleChat() {
         if (chunk.done) {
           chatMessages.push({
             role: 'assistant',
-            content: assistantResponse
+            content: assistantResponse,
           });
 
           if (chatMessages.length >= 16) {
