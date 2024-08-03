@@ -4,7 +4,7 @@ import { getConfig } from './utilities.mjs';
 
 const { embedModel, numberOfResults } = getConfig();
 
-const tools = [
+const available_tools = [
   {
     function_name: 'retreiveFromVectorDB',
     parameters: {
@@ -73,4 +73,9 @@ function calculator({ expression }) {
   return result;
 }
 
-export { tools, tools_response_format, retreiveFromVectorDB, calculator };
+export {
+  available_tools,
+  tools_response_format,
+  retreiveFromVectorDB,
+  calculator,
+};

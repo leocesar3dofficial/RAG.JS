@@ -3,7 +3,7 @@ import { formatDuration } from './utils.mjs';
 import ollama from 'ollama';
 import { getConfig } from './utilities.mjs';
 import {
-  tools,
+  available_tools,
   tools_response_format,
   retreiveFromVectorDB,
   calculator,
@@ -17,88 +17,100 @@ const rl = readline.createInterface({
   output: process.stdout,
 });
 
+async function getToolResponse(query) {
+  const toolQuery = `
+  \n\nThe user query is:
+  \n\n${query}
+  \n\nYou have these tools at your disposal: ${JSON.stringify(available_tools)}
+  \n\nAnswer in this example JSON format if you see the need to use one or more tools:
+  \n\n:${JSON.stringify(tools_response_format)}
+  \n\nReplace the values of the tool parameters with the provided information from the user query.
+  `;
+
+  return ollama.generate({
+    model: mainModel,
+    system: 'Please keep your answers as brief as possible.',
+    prompt: toolQuery,
+    stream: false,
+    options: {
+      num_ctx: contextSize,
+      temperature: currentTemperature,
+    },
+  });
+}
+
+async function executeTools(cleanedResponse) {
+  try {
+    const jsonObject = JSON.parse(cleanedResponse);
+    const availableFunctions = {
+      retreiveFromVectorDB: retreiveFromVectorDB,
+      calculator: calculator,
+    };
+
+    return await Promise.all(
+      jsonObject.map(async (tool) => {
+        const functionToCall = availableFunctions[tool.function_name];
+        if (typeof functionToCall === 'function') {
+          console.log(`Invoked tool: ${tool.function_name}`);
+          return await functionToCall(tool.parameters);
+        }
+      })
+    );
+  } catch (error) {
+    console.error(`An error occurred during tool execution: ${error}`);
+    return [];
+  }
+}
+
+async function generateResponse(query, toolResults) {
+  const chatQuery = `
+  This is our conversation so far (if any):
+  \n\n${JSON.stringify(chatMessages, null, 2)}
+  \n\nTool results (if any):
+  \n\n${toolResults.join('\n')}
+  \n\nPlease answer this question with the provided information (if any):
+  \n\n${query}
+  `;
+
+  return ollama.generate({
+    model: mainModel,
+    system:
+      'You are a helpful assistant. Only answer based on the provided information.',
+    prompt: chatQuery,
+    stream: true,
+    options: {
+      num_ctx: contextSize,
+      temperature: currentTemperature,
+    },
+  });
+}
+
 async function handleChat() {
   rl.question('You: ', async (query) => {
     process.stdout.write('\x1Bc');
 
-    if (query.length > 2) {
+    if (query.trim().length > 2) {
       console.time('Execution Time');
       console.log(`Question:\n${query}\n`);
 
-      const toolQuery = `
-      \n\nThe user query is:
-      \n\n${query}
-      \n\nYou have this tools at your disposal: ${JSON.stringify(tools)}
-      \n\nAnswer in this example JSON format if you see the need to use one or more tools:
-      \n\n:${JSON.stringify(tools_response_format)}
-      \n\nSo if the user invoke a tool, you must replace the values of the tool parameters with the provided information contained in the user query.
-      `;
-
       chatMessages.push({ role: 'user', content: query });
 
-      const tools_response = await ollama.generate({
-        model: mainModel,
-        system: 'Please keep your answers as brief as possible.',
-        prompt: toolQuery,
-        stream: false,
-        options: {
-          num_ctx: contextSize,
-          temperature: currentTemperature,
-        },
-      });
+      const toolsResponse = await getToolResponse(query);
 
-      console.log(`Tools response:\n${tools_response.response}`);
-      const cleanedResponse = tools_response.response
+      const cleanedResponse = toolsResponse.response
         .replace('```json', '')
         .replace('```', '')
         .replace(/^:/, '')
         .replace(/,\s*([\]}])/g, '$1')
         .trim();
 
-      const toolResults = [];
+      let toolResults = [];
 
       if (cleanedResponse.startsWith('[') && cleanedResponse.endsWith(']')) {
-        try {
-          const jsonObject = JSON.parse(cleanedResponse);
-
-          const availableFunctions = {
-            retreiveFromVectorDB: retreiveFromVectorDB,
-            calculator: calculator,
-          };
-
-          for (const tool of jsonObject) {
-            const functionToCall = availableFunctions[tool.function_name];
-
-            if (typeof functionToCall === 'function') {
-              console.log(`Invoked tool: ${tool.function_name}`);
-              toolResults.push(await functionToCall(tool.parameters));
-            }
-          }
-        } catch (error) {
-          console.log(`An error occurred: ${error}`);
-        }
+        toolResults = await executeTools(cleanedResponse);
       }
 
-      const chatQuery = `
-      This is our conversation so far (if any):
-      \n\n${JSON.stringify(chatMessages, null, 2)}
-      \n\nTool results (if any):
-      \n\n${toolResults}
-      \n\nPlease answer this question with the provided information (if any):
-      \n\n${query}
-      `;
-
-      const stream = await ollama.generate({
-        model: mainModel,
-        system:
-          'You are a helpful assistant. Only answer based on the provided information.',
-        prompt: chatQuery,
-        stream: true,
-        options: {
-          num_ctx: contextSize,
-          temperature: currentTemperature,
-        },
-      });
+      const stream = await generateResponse(query, toolResults);
 
       console.log('\nAssistant:');
       let assistantResponse = '';
@@ -118,7 +130,7 @@ async function handleChat() {
             content: assistantResponse,
           });
 
-          if (chatMessages.length >= 16) {
+          if (chatMessages.length > 15) {
             chatMessages.splice(0, 2);
           }
 
