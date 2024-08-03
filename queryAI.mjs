@@ -16,6 +16,7 @@ const {
   chatMaxMessages,
   assistantMaxMessageSize,
 } = getConfig();
+
 const chatMessages = [];
 
 const rl = readline.createInterface({
@@ -25,24 +26,29 @@ const rl = readline.createInterface({
 
 async function getToolResponse(query) {
   const toolQuery = `
-  \n\nThe user query is:
-  \n\n${query}
-  \n\nYou have these tools at your disposal: ${JSON.stringify(available_tools)}
-  \n\nAnswer in this example JSON format if you see the need to use one or more tools:
-  \n\n:${JSON.stringify(tools_response_format)}
-  \n\nReplace the values of the tool parameters with the provided information from the user query.
+    The user query is:\n${query}\n
+    You have these tools at your disposal: ${JSON.stringify(available_tools)}\n
+    Answer in this example JSON format if you see the need to use one or more tools:\n${JSON.stringify(
+      tools_response_format
+    )}\n
+    Replace the values of the tool parameters with the provided information from the user query.
   `;
 
-  return ollama.generate({
-    model: mainModel,
-    system: 'Please keep your answers as brief as possible.',
-    prompt: toolQuery,
-    stream: false,
-    options: {
-      num_ctx: contextSize,
-      temperature: currentTemperature,
-    },
-  });
+  try {
+    return await ollama.generate({
+      model: mainModel,
+      system: 'Please keep your answer as brief as possible.',
+      prompt: toolQuery,
+      stream: false,
+      options: {
+        num_ctx: contextSize,
+        temperature: currentTemperature,
+      },
+    });
+  } catch (error) {
+    console.error(`Failed to generate tool response: ${error.message}`);
+    return null;
+  }
 }
 
 async function executeTools(cleanedResponse) {
@@ -50,7 +56,6 @@ async function executeTools(cleanedResponse) {
 
   try {
     const jsonObject = JSON.parse(cleanedResponse);
-
     const availableFunctions = {
       retreiveFromVectorDB: retrieveFromVectorDB,
       calculator: calculator,
@@ -58,42 +63,56 @@ async function executeTools(cleanedResponse) {
 
     for (const tool of jsonObject) {
       const functionToCall = availableFunctions[tool.function_name];
-
       if (typeof functionToCall === 'function') {
         console.log(`Invoked tool: ${tool.function_name}`);
         const response = await functionToCall(tool.parameters);
         toolsResponse.push(response);
       }
     }
-
-    return toolsResponse;
   } catch (error) {
-    console.error(`An error occurred during tool execution: ${error}`);
-    return toolsResponse;
+    console.error(`An error occurred during tool execution: ${error.message}`);
   }
+
+  return toolsResponse;
 }
 
 async function generateResponse(query, toolResults) {
   const chatQuery = `
-  This is our conversation so far (if any):
-  \n\n${JSON.stringify(chatMessages, null, 2)}
-  \n\nTool results (if any):
-  \n\n${toolResults.join('\n')}
-  \n\nPlease answer the following question considering the provided information (if any):
-  \n\n${query}
+    This is our conversation so far (if any):\n${JSON.stringify(
+      chatMessages,
+      null,
+      2
+    )}\n
+    Tool results (if any):\n${toolResults.join('\n')}\n
+    Please answer the following question considering the provided information (if any):\n${query}
   `;
 
-  return ollama.generate({
-    model: mainModel,
-    system:
-      'You are a helpful assistant. Only answer based on the provided information. Please give a detailed answer.',
-    prompt: chatQuery,
-    stream: true,
-    options: {
-      num_ctx: contextSize,
-      temperature: currentTemperature,
-    },
-  });
+  try {
+    return await ollama.generate({
+      model: mainModel,
+      system:
+        'You are a helpful assistant. Only answer based on the provided information. Please give a detailed answer.',
+      prompt: chatQuery,
+      stream: true,
+      options: {
+        num_ctx: contextSize,
+        temperature: currentTemperature,
+      },
+    });
+  } catch (error) {
+    console.error(`Failed to generate response: ${error.message}`);
+    return null;
+  }
+}
+
+function cleanToolResponse(response) {
+  return response
+    .replace('```json', '')
+    .replace('```', '')
+    .replace(/^:/, '')
+    .replace(/,\s*([\]}])/g, '$1')
+    .replace(/\[:/g, '[')
+    .trim();
 }
 
 async function handleChat() {
@@ -105,59 +124,57 @@ async function handleChat() {
       console.log(`Question:\n${query}\n`);
 
       chatMessages.push({ role: 'user', content: query });
-
       const toolsResponse = await getToolResponse(query);
 
-      const cleanedResponse = toolsResponse.response
-        .replace('```json', '')
-        .replace('```', '')
-        .replace(/^:/, '')
-        .replace(/,\s*([\]}])/g, '$1')
-        .replace(/\[:/g, '[')
-        .trim();
+      if (toolsResponse) {
+        const cleanedResponse = cleanToolResponse(toolsResponse.response);
+        const toolResults =
+          cleanedResponse.startsWith('[') && cleanedResponse.endsWith(']')
+            ? await executeTools(cleanedResponse)
+            : [];
 
-      let toolResults = [];
+        const stream = await generateResponse(query, toolResults);
 
-      if (cleanedResponse.startsWith('[') && cleanedResponse.endsWith(']')) {
-        toolResults = await executeTools(cleanedResponse);
-      }
+        if (stream) {
+          console.log('\nAssistant:');
+          let assistantResponse = '';
+          let responseCount = 0;
 
-      const stream = await generateResponse(query, toolResults);
+          for await (const chunk of stream) {
+            process.stdout.write(chunk.response);
+            responseCount++;
 
-      console.log('\nAssistant:');
-      let assistantResponse = '';
-      let responseCount = 0;
+            if (responseCount < assistantMaxMessageSize) {
+              assistantResponse += chunk.response;
+            }
 
-      for await (const chunk of stream) {
-        process.stdout.write(chunk.response);
-        responseCount++;
+            if (chunk.done) {
+              chatMessages.push({
+                role: 'assistant',
+                content: assistantResponse,
+              });
 
-        if (responseCount < assistantMaxMessageSize) {
-          assistantResponse += chunk.response;
-        }
+              if (chatMessages.length > chatMaxMessages) {
+                chatMessages.splice(0, 2);
+              }
 
-        if (chunk.done) {
-          chatMessages.push({
-            role: 'assistant',
-            content: assistantResponse,
-          });
-
-          if (chatMessages.length > chatMaxMessages) {
-            chatMessages.splice(0, 2);
+              console.log('\n\n==============================');
+              console.log('Prompt Tokens:', chunk.prompt_eval_count);
+              console.log('Response Tokens:', chunk.eval_count);
+              console.log(
+                'Loading the Model Time:',
+                formatDuration(chunk.load_duration)
+              );
+              console.log(
+                'Prompt Evaluation Time:',
+                formatDuration(chunk.prompt_eval_duration)
+              );
+              console.log(
+                'Response Time:',
+                formatDuration(chunk.total_duration)
+              );
+            }
           }
-
-          console.log('\n\n==============================');
-          console.log('Prompt Tokens:', chunk.prompt_eval_count);
-          console.log('Response Tokens:', chunk.eval_count);
-          console.log(
-            'Loading the Model Time:',
-            formatDuration(chunk.load_duration)
-          );
-          console.log(
-            'Prompt Evaluation Time:',
-            formatDuration(chunk.prompt_eval_duration)
-          );
-          console.log('Response Time:', formatDuration(chunk.total_duration));
         }
       }
 
@@ -169,8 +186,7 @@ async function handleChat() {
       );
     }
 
-    // Recursive call to handle next query
-    handleChat();
+    handleChat(); // Recursive call to handle the next query
   });
 }
 

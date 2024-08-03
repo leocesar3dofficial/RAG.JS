@@ -1,7 +1,7 @@
 import { ChromaClient } from 'chromadb';
 import ollama from 'ollama';
 import { getConfig } from './utilities.mjs';
-import { evaluate } from 'mathjs';
+import { evaluate, exp } from 'mathjs';
 
 const { embedModel, numberOfResults } = getConfig();
 
@@ -65,15 +65,11 @@ async function retrieveFromVectorDB({ user_query }) {
 
   const jsonOutput = JSON.stringify(output, null, 2);
 
-  // console.log('Returned documents:\n');
-  // console.log(jsonOutput);
-  // console.log('\nEnd of documents.');
-
   return jsonOutput;
 }
 
 async function calculator({ expression }) {
-  const result = `The result of the calculation is: ${evaluate(expression)}`;
+  const result = `Calculator: ${expression} = ${evaluate(expression)}`;
   return result;
 }
 

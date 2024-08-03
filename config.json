@@ -7,7 +7,7 @@
   "currentTemperature": 0.1,
   "numberOfResults": 12,
   "chatMaxMessages": 30,
-  "assistantMaxMessageSize": 60,
+  "assistantMaxMessageSize": 1024,
   "modelDescriptions": [
     {
       "name": "llama3.1",
