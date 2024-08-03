@@ -35,7 +35,7 @@ const tools_response_format = [
   },
 ];
 
-async function retreiveFromVectorDB({ user_query }) {
+async function retrieveFromVectorDB({ user_query }) {
   const chroma = new ChromaClient();
   const collection = await chroma.getCollection({
     name: 'rag_collection',
@@ -80,6 +80,6 @@ async function calculator({ expression }) {
 export {
   available_tools,
   tools_response_format,
-  retreiveFromVectorDB,
+  retrieveFromVectorDB,
   calculator,
 };

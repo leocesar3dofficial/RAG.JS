@@ -5,7 +5,7 @@ import { getConfig } from './utilities.mjs';
 import {
   available_tools,
   tools_response_format,
-  retreiveFromVectorDB,
+  retrieveFromVectorDB,
   calculator,
 } from './tools.mjs';
 
@@ -52,7 +52,7 @@ async function executeTools(cleanedResponse) {
     const jsonObject = JSON.parse(cleanedResponse);
 
     const availableFunctions = {
-      retreiveFromVectorDB: retreiveFromVectorDB,
+      retreiveFromVectorDB: retrieveFromVectorDB,
       calculator: calculator,
     };
 
