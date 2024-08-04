@@ -8,12 +8,12 @@ const { embedModel, numberOfResults } = getConfig();
 
 const available_tools = [
   {
-    function_name: 'retreiveFromVectorDB',
+    function_name: 'retrieveFromVectorDB',
     parameters: {
       user_query: '<query>',
     },
     description:
-      'This tool is triggered if the user mentions or ask to retrieve documents.',
+      'Invoke this tool if the user mentions or ask to retrieve information on some topic of interest.',
   },
   {
     function_name: 'calculator',
@@ -21,7 +21,7 @@ const available_tools = [
       expression: '<math expression>',
     },
     description:
-      'This tool is triggered if the user ask to calculate something. Format the values to a math expression.',
+      'Invoke this tool if the user ask to calculate something. Format the values to a math expression.',
   },
   {
     function_name: 'getWeather',
@@ -29,7 +29,7 @@ const available_tools = [
       city_name: '<city name>',
     },
     description:
-      'This tool is triggered if the user ask to know the current weather or temperature in a city_name.',
+      'Invoke this tool if the user ask to know the current weather or temperature in a city.',
   },
 ];
 
