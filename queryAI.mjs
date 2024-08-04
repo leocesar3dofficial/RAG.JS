@@ -7,6 +7,7 @@ import {
   tools_response_format,
   retrieveFromVectorDB,
   calculator,
+  getWeather,
 } from './tools.mjs';
 
 const {
@@ -59,6 +60,7 @@ async function executeTools(cleanedResponse) {
     const availableFunctions = {
       retreiveFromVectorDB: retrieveFromVectorDB,
       calculator: calculator,
+      getWeather: getWeather,
     };
 
     for (const tool of jsonObject) {

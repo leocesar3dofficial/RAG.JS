@@ -16,4 +16,9 @@ function formatDuration(ns) {
   return parts.join(' ');
 }
 
-export { formatDuration };
+function capitalizeWord(word) {
+  if (!word) return '';
+  return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+}
+
+export { formatDuration, capitalizeWord };

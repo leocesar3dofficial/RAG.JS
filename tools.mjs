@@ -1,7 +1,8 @@
 import { ChromaClient } from 'chromadb';
 import ollama from 'ollama';
 import { getConfig } from './utilities.mjs';
-import { evaluate, exp } from 'mathjs';
+import { evaluate } from 'mathjs';
+import { capitalizeWord } from './utils.mjs';
 
 const { embedModel, numberOfResults } = getConfig();
 
@@ -21,6 +22,14 @@ const available_tools = [
     },
     description:
       'This tool is triggered if the user ask to calculate something. Format the values to a math expression.',
+  },
+  {
+    function_name: 'getWeather',
+    parameters: {
+      city_name: '<city name>',
+    },
+    description:
+      'This tool is triggered if the user ask to know the current weather or temperature in a city_name.',
   },
 ];
 
@@ -73,9 +82,35 @@ async function calculator({ expression }) {
   return result;
 }
 
+async function getWeather({ city_name }) {
+  city_name = capitalizeWord(city_name);
+  const response = await fetch(`https://wttr.in/${city_name}?format=j1`);
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch weather data: ${response.statusText}`);
+  }
+
+  const data = await response.json();
+
+  const formattedResult = `The current weather in ${city_name} is:\n
+  Temperature: ${data['current_condition'][0]['temp_C']}°C\n
+  Clouds: ${data['current_condition'][0]['cloudcover']}%\n 
+  Humidity: ${data['current_condition'][0]['humidity']}%\n 
+  Observation time: ${data['current_condition'][0]['observation_time']}\n 
+  Preciptation: ${data['current_condition'][0]['precipMM']}mm\n 
+  Pressure: ${data['current_condition'][0]['pressure']}mb\n 
+  UV index: ${data['current_condition'][0]['uvIndex']}\n 
+  Visibility: ${data['current_condition'][0]['visibility']}%\n 
+  Description: ${data['current_condition'][0]['weatherDesc'][0]['value']}. 
+  `;
+
+  return formattedResult;
+}
+
 export {
   available_tools,
   tools_response_format,
   retrieveFromVectorDB,
   calculator,
+  getWeather,
 };
