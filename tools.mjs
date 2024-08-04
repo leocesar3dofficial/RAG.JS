@@ -13,7 +13,7 @@ const available_tools = [
       user_query: '<query>',
     },
     description:
-      'Invoke this tool if the user mentions or ask to retrieve information on some topic of interest.',
+      'Call this tool if the user mentions or asks to retrieve or fetch information on some topic of his interest in the database.',
   },
   {
     function_name: 'calculator',
@@ -21,7 +21,7 @@ const available_tools = [
       expression: '<math expression>',
     },
     description:
-      'Invoke this tool if the user ask to calculate something. Format the values to a math expression.',
+      'Call this tool if the user asks to calculate something. Format the values to a math expression.',
   },
   {
     function_name: 'getWeather',
@@ -29,7 +29,7 @@ const available_tools = [
       city_name: '<city name>',
     },
     description:
-      'Invoke this tool if the user ask to know the current weather or temperature in a city.',
+      'Call this tool if the user asks to know the current weather or temperature in a city.',
   },
 ];
 
@@ -79,6 +79,7 @@ async function retrieveFromVectorDB({ user_query }) {
 
 async function calculator({ expression }) {
   const result = `Calculator: ${expression} = ${evaluate(expression)}`;
+  console.log(result);
   return result;
 }
 
