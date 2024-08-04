@@ -58,7 +58,7 @@ async function executeTools(cleanedResponse) {
   try {
     const jsonObject = JSON.parse(cleanedResponse);
     const availableFunctions = {
-      retreiveFromVectorDB: retrieveFromVectorDB,
+      retrieveFromVectorDB: retrieveFromVectorDB,
       calculator: calculator,
       getWeather: getWeather,
     };
