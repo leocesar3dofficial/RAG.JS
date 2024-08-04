@@ -1,5 +1,5 @@
 import readline from 'readline';
-import { formatDuration } from './utils.mjs';
+import { formatDuration, cleanToolResponse } from './utils.mjs';
 import ollama from 'ollama';
 import { getConfig } from './utilities.mjs';
 import {
@@ -105,16 +105,6 @@ async function generateResponse(query, toolResults) {
     console.error(`Failed to generate response: ${error.message}`);
     return null;
   }
-}
-
-function cleanToolResponse(response) {
-  return response
-    .replace('```json', '')
-    .replace('```', '')
-    .replace(/^:/, '')
-    .replace(/,\s*([\]}])/g, '$1')
-    .replace(/\[:/g, '[')
-    .trim();
 }
 
 async function handleChat() {
