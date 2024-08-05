@@ -3,6 +3,8 @@ import ollama from 'ollama';
 import { getConfig } from './utilities.mjs';
 import { evaluate } from 'mathjs';
 import { capitalizeWord } from './utils.mjs';
+import { load } from 'cheerio';
+import { HttpsProxyAgent } from 'https-proxy-agent';
 
 const { embedModel, numberOfResults } = getConfig();
 
@@ -30,6 +32,14 @@ const available_tools = [
     },
     description:
       'Call this tool if the user asks to know the current weather or temperature in a city.',
+  },
+  {
+    function_name: 'extractTextFromPage',
+    parameters: {
+      url: '<website url>',
+    },
+    description:
+      'Call this tool if the user asks to get the text content from the provided website url.',
   },
 ];
 
@@ -108,10 +118,56 @@ async function getWeather({ city_name }) {
   return formattedResult;
 }
 
+async function fetchPageContent(url) {
+  try {
+    const proxyUrl = 'http://168.63.76.32:3128';
+    const proxyAgent = new HttpsProxyAgent(proxyUrl);
+    const response = await fetch(url, {
+      agent: proxyAgent,
+      headers: {
+        'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+      },
+    });
+    return await response.text();
+  } catch (error) {
+    console.error('Error fetching the page:', error);
+    throw error;
+  }
+}
+
+function formatTextFromHTML(html) {
+  const document = load(html);
+  document('script, style').remove();
+  let text = document('body').text();
+  text = text.replace(/\s+/g, ' ').trim();
+  const sentences = text.match(/[^.!?]+[.!?]+/g) || [];
+  const formattedText = sentences.map((sentence) => sentence.trim()).join('\n');
+  return formattedText;
+}
+
+async function extractTextFromPage({ url }) {
+  try {
+    const html = await fetchPageContent(url);
+    let textContent = formatTextFromHTML(html);
+
+    if (textContent === '') {
+      textContent = 'The access to the page was denied!';
+      console.log(textContent);
+    }
+
+    return textContent;
+  } catch (error) {
+    console.error('Failed to extract text content:', error);
+    return null;
+  }
+}
+
 export {
   available_tools,
   tools_response_format,
   retrieveFromVectorDB,
   calculator,
   getWeather,
+  extractTextFromPage,
 };

@@ -8,6 +8,7 @@ import {
   retrieveFromVectorDB,
   calculator,
   getWeather,
+  extractTextFromPage,
 } from './tools.mjs';
 
 const {
@@ -29,7 +30,7 @@ async function getToolResponse(query) {
   const toolQuery = `
     The user query is:\n${query}\n
     You have these tools at your disposal: ${JSON.stringify(available_tools)}\n
-    Answer in this example JSON format if you see the need to use one or more tools:\n${JSON.stringify(
+    Answer in JSON using this example format:\n${JSON.stringify(
       tools_response_format
     )}\n
     Replace the values of the tool parameters with the provided information from the user query.
@@ -61,6 +62,7 @@ async function executeTools(cleanedResponse) {
       retrieveFromVectorDB: retrieveFromVectorDB,
       calculator: calculator,
       getWeather: getWeather,
+      extractTextFromPage: extractTextFromPage,
     };
 
     for (const tool of jsonObject) {

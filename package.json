@@ -11,8 +11,10 @@
   "description": "",
   "dependencies": {
     "@stdlib/nlp-sentencize": "^0.2.1",
+    "cheerio": "^1.0.0-rc.12",
     "chromadb": "^1.8.1",
     "chromadb-default-embed": "^2.13.2",
+    "https-proxy-agent": "^7.0.5",
     "mathjs": "^13.0.3",
     "ollama": "^0.5.2"
   }
