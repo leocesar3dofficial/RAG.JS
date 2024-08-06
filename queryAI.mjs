@@ -54,8 +54,6 @@ async function getToolResponse(query) {
 }
 
 async function executeTools(cleanedResponse) {
-  const toolsResponse = [];
-
   try {
     const jsonObject = JSON.parse(cleanedResponse);
     const availableFunctions = {
@@ -65,22 +63,21 @@ async function executeTools(cleanedResponse) {
       extractTextFromPage: extractTextFromPage,
     };
 
-    for (const tool of jsonObject) {
-      const functionToCall = availableFunctions[tool.function_name];
-      if (typeof functionToCall === 'function') {
-        console.log(`Invoked tool: ${tool.function_name}`);
-        const response = await functionToCall(tool.parameters);
-        toolsResponse.push(response);
-      }
-    }
+    return await Promise.all(
+      jsonObject.map(async (tool) => {
+        const functionToCall = availableFunctions[tool.function_name];
+        if (typeof functionToCall === 'function') {
+          console.log(`Invoked tool: ${tool.function_name}`);
+          return await functionToCall(tool.parameters);
+        }
+      })
+    );
   } catch (error) {
     console.error(`An error occurred during tool execution: ${error.message}`);
   }
-
-  return toolsResponse;
 }
 
-async function generateResponse(query, toolResults) {
+async function generateResponse(query, toolResults = []) {
   const chatQuery = `
     This is our conversation so far (if any):\n${JSON.stringify(
       chatMessages,
@@ -122,6 +119,7 @@ async function handleChat() {
 
       if (toolsResponse) {
         const cleanedResponse = cleanToolResponse(toolsResponse.response);
+        console.log(`Tools to use:\n\n${cleanedResponse}\n`);
         const toolResults =
           cleanedResponse.startsWith('[') && cleanedResponse.endsWith(']')
             ? await executeTools(cleanedResponse)

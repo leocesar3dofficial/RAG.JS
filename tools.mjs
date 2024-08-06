@@ -12,7 +12,7 @@ const available_tools = [
   {
     function_name: 'retrieveFromVectorDB',
     parameters: {
-      user_query: '<query>',
+      user_query: '<user_query>',
     },
     description:
       'Call this tool if the user mentions or asks to retrieve or fetch information on some topic of his interest in the database.',
@@ -55,6 +55,10 @@ const tools_response_format = [
 ];
 
 async function retrieveFromVectorDB({ user_query }) {
+  if (user_query === undefined || user_query.length < 3) {
+    return 'The parameter user_query is malformed.';
+  }
+
   const chroma = new ChromaClient();
   const collection = await chroma.getCollection({
     name: 'rag_collection',
@@ -94,6 +98,10 @@ async function calculator({ expression }) {
 }
 
 async function getWeather({ city_name }) {
+  if (city_name === undefined || city_name.length < 3) {
+    return 'The parameter city_name is malformed.';
+  }
+
   city_name = capitalizeWord(city_name);
   const response = await fetch(`https://wttr.in/${city_name}?format=j1`);
 
