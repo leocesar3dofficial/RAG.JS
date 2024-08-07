@@ -28,12 +28,13 @@ const rl = readline.createInterface({
 
 async function getToolResponse(query) {
   const toolQuery = `
-    The user query is:\n${query}\n
+    The user query is: ${query}\n
     You have these tools at your disposal: ${JSON.stringify(available_tools)}\n
-    Answer in JSON using this example format:\n${JSON.stringify(
+    Please answer in JSON using this example format:\n${JSON.stringify(
       tools_response_format
     )}\n
-    Replace the values of the tool parameters with the provided information from the user query.
+    Replace the values of the tool parameters with the provided information from the user query.\n
+    Only invoke one of the tools if you have the parameters.
   `;
 
   try {

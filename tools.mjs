@@ -15,7 +15,7 @@ const available_tools = [
       user_query: '<user_query>',
     },
     description:
-      'Call this tool if the user mentions or asks to retrieve or fetch information on some topic of his interest in the database.',
+      'Call this tool if the user mentions or asks to retrieve or fetch information on some topic of interest in the database.',
   },
   {
     function_name: 'calculator',
@@ -39,7 +39,7 @@ const available_tools = [
       url: '<website url>',
     },
     description:
-      'Call this tool if the user asks to get the text content from the provided website url.',
+      'Call this tool if the user asks to get the text from the provided website url.',
   },
 ];
 
@@ -98,15 +98,11 @@ async function calculator({ expression }) {
 }
 
 async function getWeather({ city_name }) {
-  if (city_name === undefined || city_name.length < 3) {
-    return 'The parameter city_name is malformed.';
-  }
-
   city_name = capitalizeWord(city_name);
   const response = await fetch(`https://wttr.in/${city_name}?format=j1`);
 
   if (!response.ok) {
-    throw new Error(`Failed to fetch weather data: ${response.statusText}`);
+    return `Failed to fetch weather data: ${response.statusText}`;
   }
 
   const data = await response.json();
