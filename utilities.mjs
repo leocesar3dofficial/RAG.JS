@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import sentencize from '@stdlib/nlp-sentencize';
 
-export function getFileList(dirPath) {
+function getFileList(dirPath) {
   let fileList = [];
 
   // Check if the provided path is valid and is a directory
@@ -34,7 +34,7 @@ export function getFileList(dirPath) {
   return fileList;
 }
 
-export function getFileText(filePath) {
+function getFileText(filePath) {
   // Check if the provided path is valid and is a file
   if (!fs.existsSync(filePath) || !fs.lstatSync(filePath).isFile()) {
     throw new Error(`Invalid or non-file path: ${filePath}`);
@@ -49,11 +49,11 @@ export function getFileText(filePath) {
   }
 }
 
-export function getConfig() {
+function getConfig() {
   return JSON.parse(getFileText('config.json'));
 }
 
-export function chunkTextBySentences(sourceText, sentencesPerChunk, overlap) {
+function chunkTextBySentences(sourceText, sentencesPerChunk, overlap) {
   if (sentencesPerChunk < 2) {
     throw new Error('The number of sentences per chunk must be 2 or more.');
   }
@@ -92,3 +92,48 @@ export function chunkTextBySentences(sourceText, sentencesPerChunk, overlap) {
 
   return chunks;
 }
+
+function formatDuration(ns) {
+  let ms = Math.floor(ns / 1000000);
+  let seconds = Math.floor(ms / 1000);
+  ms = ms % 1000;
+  let minutes = Math.floor(seconds / 60);
+  seconds = seconds % 60;
+  let hours = Math.floor(minutes / 60);
+  minutes = minutes % 60;
+
+  let parts = [];
+  if (hours > 0) parts.push(`${hours}h`);
+  if (minutes > 0 || hours > 0) parts.push(`${minutes}m`);
+  if (seconds > 0 || minutes > 0 || hours > 0) parts.push(`${seconds}s`);
+  parts.push(`${ms}ms`);
+
+  return parts.join(' ');
+}
+
+function cleanToolResponse(response) {
+  return response
+    .replace('```json', '')
+    .replace(/```[\s\S]*$/, '')
+    .replace(/^:/, '')
+    .replace(/,\s*([\]}])/g, '$1')
+    .replace(/\[:/g, '[')
+    .replace(/^(?!\[\s*).*$/, '[$&]')
+    .replace(/],\s*$/, ']')
+    .trim();
+}
+
+function capitalizeWord(word) {
+  if (!word) return '';
+  return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+}
+
+export {
+  getFileList,
+  getFileText,
+  getConfig,
+  chunkTextBySentences,
+  formatDuration,
+  cleanToolResponse,
+  capitalizeWord,
+};

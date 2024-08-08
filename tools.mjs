@@ -1,8 +1,7 @@
 import { ChromaClient } from 'chromadb';
 import ollama from 'ollama';
-import { getConfig } from './utilities.mjs';
+import { getConfig, capitalizeWord } from './utilities.mjs';
 import { evaluate } from 'mathjs';
-import { capitalizeWord } from './utils.mjs';
 import { load } from 'cheerio';
 import { HttpsProxyAgent } from 'https-proxy-agent';
 
@@ -15,7 +14,7 @@ const available_tools = [
       user_query: '<user_query>',
     },
     description:
-      'Call this tool if the user mentions or asks to retrieve or fetch information on some topic of interest in the database.',
+      'Call this tool if the user mentions or asks to retrieve or fetch information on some topic of his interest in the database.',
   },
   {
     function_name: 'calculator',
@@ -39,7 +38,7 @@ const available_tools = [
       url: '<website url>',
     },
     description:
-      'Call this tool if the user asks to get the text from the provided website url.',
+      'Call this tool if the user asks to get the text content from the provided website url.',
   },
 ];
 
@@ -59,67 +58,86 @@ async function retrieveFromVectorDB({ user_query }) {
     return 'The parameter user_query is malformed.';
   }
 
-  const chroma = new ChromaClient();
-  const collection = await chroma.getCollection({
-    name: 'rag_collection',
-  });
+  try {
+    const chroma = new ChromaClient();
+    const collection = await chroma.getCollection({
+      name: 'rag_collection',
+    });
 
-  const queryEmbed = (
-    await ollama.embeddings({ model: embedModel, prompt: user_query })
-  ).embedding;
+    const queryEmbed = (
+      await ollama.embeddings({ model: embedModel, prompt: user_query })
+    ).embedding;
 
-  const relevantDocs = await collection.query({
-    queryEmbeddings: [queryEmbed],
-    nResults: numberOfResults,
-  });
+    const relevantDocs = await collection.query({
+      queryEmbeddings: [queryEmbed],
+      nResults: numberOfResults,
+    });
 
-  const output = relevantDocs.metadatas[0].map((metadata, index) => {
-    const fileName = metadata.file.split('/').pop();
-    const documentExcerpt = relevantDocs.documents[0][index];
-    const similarityScore = relevantDocs.distances[0][index];
+    const output = relevantDocs.metadatas[0].map((metadata, index) => {
+      const fileName = metadata.file.split('/').pop();
+      const documentExcerpt = relevantDocs.documents[0][index];
+      const similarityScore = relevantDocs.distances[0][index];
 
-    return {
-      file: fileName,
-      chunk: metadata.chunk,
-      relevance: `${((1 - similarityScore) * 100).toFixed(2)}%`,
-      text: documentExcerpt,
-    };
-  });
+      return {
+        file: fileName,
+        chunk: metadata.chunk,
+        relevance: `${((1 - similarityScore) * 100).toFixed(2)}%`,
+        text: documentExcerpt,
+      };
+    });
 
-  const jsonOutput = JSON.stringify(output, null, 2);
+    const jsonOutput = JSON.stringify(output, null, 2);
 
-  return jsonOutput;
+    return jsonOutput;
+  } catch (error) {
+    console.error('Error in retrieveFromVectorDB:', error.message);
+    return `Error: Unable to retrieve data due to ${error.message}`;
+  }
 }
 
 async function calculator({ expression }) {
-  const result = `Calculator: ${expression} = ${evaluate(expression)}`;
-  console.log(result);
-  return result;
+  try {
+    const result = `Calculator: ${expression} = ${evaluate(expression)}`;
+    console.log(result);
+    return result;
+  } catch {
+    console.error('Error in evaluating expression:', error.message);
+    return `Error: Unable to evaluate expression "${expression}"`;
+  }
 }
 
 async function getWeather({ city_name }) {
-  city_name = capitalizeWord(city_name);
-  const response = await fetch(`https://wttr.in/${city_name}?format=j1`);
-
-  if (!response.ok) {
-    return `Failed to fetch weather data: ${response.statusText}`;
+  if (city_name === undefined || city_name.length < 3) {
+    return 'The parameter city_name is malformed.';
   }
 
-  const data = await response.json();
+  try {
+    city_name = capitalizeWord(city_name);
+    const response = await fetch(`https://wttr.in/${city_name}?format=j1`);
 
-  const formattedResult = `The current weather in ${city_name} is:\n
-  Temperature: ${data['current_condition'][0]['temp_C']}°C\n
-  Clouds: ${data['current_condition'][0]['cloudcover']}%\n 
-  Humidity: ${data['current_condition'][0]['humidity']}%\n 
-  Observation time: ${data['current_condition'][0]['observation_time']}\n 
-  Preciptation: ${data['current_condition'][0]['precipMM']}mm\n 
-  Pressure: ${data['current_condition'][0]['pressure']}mb\n 
-  UV index: ${data['current_condition'][0]['uvIndex']}\n 
-  Visibility: ${data['current_condition'][0]['visibility']}%\n 
+    if (!response.ok) {
+      throw new Error(`Failed to fetch weather data: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+
+    const formattedResult = `The current weather in ${city_name} is:
+  Temperature: ${data['current_condition'][0]['temp_C']}°C
+  Clouds: ${data['current_condition'][0]['cloudcover']}% 
+  Humidity: ${data['current_condition'][0]['humidity']}% 
+  Observation time: ${data['current_condition'][0]['observation_time']}
+  Preciptation: ${data['current_condition'][0]['precipMM']}mm
+  Pressure: ${data['current_condition'][0]['pressure']}mb
+  UV index: ${data['current_condition'][0]['uvIndex']}
+  Visibility: ${data['current_condition'][0]['visibility']}%
   Description: ${data['current_condition'][0]['weatherDesc'][0]['value']}. 
   `;
 
-  return formattedResult;
+    return formattedResult;
+  } catch (error) {
+    console.error('Error in getWeather:', error.message);
+    return `Error: Unable to retrieve weather data due to ${error.message}`;
+  }
 }
 
 async function fetchPageContent(url) {
@@ -154,16 +172,10 @@ async function extractTextFromPage({ url }) {
   try {
     const html = await fetchPageContent(url);
     let textContent = formatTextFromHTML(html);
-
-    if (textContent === '') {
-      textContent = 'The access to the page was denied!';
-      console.log(textContent);
-    }
-
     return textContent;
   } catch (error) {
     console.error('Failed to extract text content:', error);
-    return null;
+    return 'Failed to extract text content:', error;
   }
 }
 

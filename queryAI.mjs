@@ -1,7 +1,6 @@
 import readline from 'readline';
-import { formatDuration, cleanToolResponse } from './utils.mjs';
 import ollama from 'ollama';
-import { getConfig } from './utilities.mjs';
+import { getConfig, formatDuration, cleanToolResponse } from './utilities.mjs';
 import {
   available_tools,
   tools_response_format,
@@ -21,6 +20,13 @@ const {
 
 const chatMessages = [];
 
+const availableFunctions = {
+  retrieveFromVectorDB: retrieveFromVectorDB,
+  calculator: calculator,
+  getWeather: getWeather,
+  extractTextFromPage: extractTextFromPage,
+};
+
 const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout,
@@ -28,13 +34,14 @@ const rl = readline.createInterface({
 
 async function getToolResponse(query) {
   const toolQuery = `
-    The user query is: ${query}\n
-    You have these tools at your disposal: ${JSON.stringify(available_tools)}\n
-    Please answer in JSON using this example format:\n${JSON.stringify(
-      tools_response_format
-    )}\n
-    Replace the values of the tool parameters with the provided information from the user query.\n
-    Only invoke one of the tools if you have the parameters.
+    The user query is:
+    ${query}
+    You have these functions to invoke/call (call one or more if necessary):
+    ${JSON.stringify(available_tools)}
+    Answer in JSON using this example format to invoke/call the function(s):
+    ${JSON.stringify(tools_response_format)}
+    Replace the values of the function parameters with the provided information from the user query.
+    Do not invoke/call one function if you don't have the necessary parameters.
   `;
 
   try {
@@ -57,12 +64,6 @@ async function getToolResponse(query) {
 async function executeTools(cleanedResponse) {
   try {
     const jsonObject = JSON.parse(cleanedResponse);
-    const availableFunctions = {
-      retrieveFromVectorDB: retrieveFromVectorDB,
-      calculator: calculator,
-      getWeather: getWeather,
-      extractTextFromPage: extractTextFromPage,
-    };
 
     return await Promise.all(
       jsonObject.map(async (tool) => {
@@ -75,18 +76,19 @@ async function executeTools(cleanedResponse) {
     );
   } catch (error) {
     console.error(`An error occurred during tool execution: ${error.message}`);
+    return ['Error.'];
   }
 }
 
-async function generateResponse(query, toolResults = []) {
+async function generateResponse(query, toolResults) {
+  console.log(toolResults);
   const chatQuery = `
-    This is our conversation so far (if any):\n${JSON.stringify(
-      chatMessages,
-      null,
-      2
-    )}\n
-    Tool results (if any):\n${toolResults.join('\n')}\n
-    Please answer the following question considering the provided information (if any):\n${query}
+    This is our conversation so far (if any):
+    ${JSON.stringify(chatMessages, null, 2)}
+    Tool results (if any):
+    ${toolResults.join('\n')}
+    Please answer the following question considering the provided information (if any):
+    ${query}
   `;
 
   try {
@@ -108,6 +110,12 @@ async function generateResponse(query, toolResults = []) {
 }
 
 async function handleChat() {
+  console.log('You can use these tools:');
+  Object.keys(availableFunctions).forEach((key) => {
+    console.log(key);
+  });
+  console.log('==============================');
+
   rl.question('You: ', async (query) => {
     process.stdout.write('\x1Bc');
 
@@ -120,12 +128,8 @@ async function handleChat() {
 
       if (toolsResponse) {
         const cleanedResponse = cleanToolResponse(toolsResponse.response);
-        console.log(`Tools to use:\n\n${cleanedResponse}\n`);
-        const toolResults =
-          cleanedResponse.startsWith('[') && cleanedResponse.endsWith(']')
-            ? await executeTools(cleanedResponse)
-            : [];
-
+        console.log(`Tools to use: ${cleanedResponse}\n`);
+        const toolResults = await executeTools(cleanedResponse);
         const stream = await generateResponse(query, toolResults);
 
         if (stream) {
@@ -171,8 +175,8 @@ async function handleChat() {
         }
       }
 
-      console.log('==============================');
       console.timeEnd('Execution Time');
+      console.log('==============================');
     } else {
       console.error(
         'Invalid input. The input must be at least 3 characters long.'
