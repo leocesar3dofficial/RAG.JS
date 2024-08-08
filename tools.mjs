@@ -86,6 +86,8 @@ async function retrieveFromVectorDB({ user_query }) {
       };
     });
 
+    const metadata = { tool_results_from: 'retrieveFromVectorDB' };
+    output.unshift(metadata);
     const jsonOutput = JSON.stringify(output, null, 2);
 
     return jsonOutput;
@@ -97,7 +99,7 @@ async function retrieveFromVectorDB({ user_query }) {
 
 async function calculator({ expression }) {
   try {
-    const result = `Calculator: ${expression} = ${evaluate(expression)}`;
+    const result = `Calculator result: ${expression} = ${evaluate(expression)}`;
     console.log(result);
     return result;
   } catch {
@@ -135,8 +137,8 @@ async function getWeather({ city_name }) {
 
     return formattedResult;
   } catch (error) {
-    console.error('Error in getWeather:', error.message);
-    return `Error: Unable to retrieve weather data due to ${error.message}`;
+    console.error('Unable to retrieve weather data due to:', error.message);
+    return `Error. Unable to retrieve weather data due to: ${error.message}`;
   }
 }
 
@@ -153,7 +155,7 @@ async function fetchPageContent(url) {
     });
     return await response.text();
   } catch (error) {
-    console.error('Error fetching the page:', error);
+    console.error('Error fetching the page:', error.message);
     throw error;
   }
 }
@@ -172,10 +174,17 @@ async function extractTextFromPage({ url }) {
   try {
     const html = await fetchPageContent(url);
     let textContent = formatTextFromHTML(html);
+
+    textContent =
+      textContent === ''
+        ? "The website didn't return any content. Possibly denied."
+        : `Returned content from the website:
+        ${textContent}`;
+
     return textContent;
   } catch (error) {
-    console.error('Failed to extract text content:', error);
-    return 'Failed to extract text content:', error;
+    console.error('Failed to extract text content:', error.message);
+    return `Failed to extract text content: ${error.message}`;
   }
 }
 

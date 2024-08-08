@@ -2,7 +2,7 @@
   "corpusPath": "./corpus",
   "collectionName": "rag_collection",
   "embedModel": "nomic-embed-text",
-  "mainModel": "gemma2:2b-instruct-q2_K",
+  "mainModel": "llama3.1",
   "contextSize": 4096,
   "currentTemperature": 0.1,
   "numberOfResults": 6,

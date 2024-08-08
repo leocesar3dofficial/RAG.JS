@@ -38,7 +38,7 @@ async function getToolResponse(query) {
     ${query}
     You have these functions to invoke/call (call one or more if necessary):
     ${JSON.stringify(available_tools)}
-    Answer in JSON using this example format to invoke/call the function(s):
+    Answer in a JSON array using this example format to invoke/call the function(s):
     ${JSON.stringify(tools_response_format)}
     Replace the values of the function parameters with the provided information from the user query.
     Do not invoke/call one function if you don't have the necessary parameters.
@@ -75,13 +75,14 @@ async function executeTools(cleanedResponse) {
       })
     );
   } catch (error) {
-    console.error(`An error occurred during tool execution: ${error.message}`);
-    return ['Error.'];
+    console.error(
+      `An error occurred while trying to execute the tool(s): ${error.message}`
+    );
+    return ['There are no returned tool results because an error occurred.'];
   }
 }
 
 async function generateResponse(query, toolResults) {
-  console.log(toolResults);
   const chatQuery = `
     This is our conversation so far (if any):
     ${JSON.stringify(chatMessages, null, 2)}
@@ -95,7 +96,7 @@ async function generateResponse(query, toolResults) {
     return await ollama.generate({
       model: mainModel,
       system:
-        'You are a helpful assistant. Only answer based on the provided information. Please give a detailed answer.',
+        'You are a helpful assistant and nly answer based on the provided information.',
       prompt: chatQuery,
       stream: true,
       options: {
@@ -128,7 +129,7 @@ async function handleChat() {
 
       if (toolsResponse) {
         const cleanedResponse = cleanToolResponse(toolsResponse.response);
-        console.log(`Tools to use: ${cleanedResponse}\n`);
+        console.log(`I've decided to use the tool(s): ${cleanedResponse}\n`);
         const toolResults = await executeTools(cleanedResponse);
         const stream = await generateResponse(query, toolResults);
 
