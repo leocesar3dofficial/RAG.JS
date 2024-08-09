@@ -63,7 +63,11 @@ async function getToolResponse(query) {
 
 async function executeTools(cleanedResponse) {
   try {
-    const jsonObject = JSON.parse(cleanedResponse);
+    let jsonObject = JSON.parse(cleanedResponse);
+
+    if (!Array.isArray(jsonObject)) {
+      jsonObject = [jsonObject];
+    }
 
     return await Promise.all(
       jsonObject.map(async (tool) => {

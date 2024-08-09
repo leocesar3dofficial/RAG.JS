@@ -125,14 +125,14 @@ async function getWeather({ city_name }) {
 
     const formattedResult = `The current weather in ${city_name} is:
   Temperature: ${data['current_condition'][0]['temp_C']}°C
-  Clouds: ${data['current_condition'][0]['cloudcover']}% 
-  Humidity: ${data['current_condition'][0]['humidity']}% 
+  Clouds: ${data['current_condition'][0]['cloudcover']}%
+  Humidity: ${data['current_condition'][0]['humidity']}%
   Observation time: ${data['current_condition'][0]['observation_time']}
   Preciptation: ${data['current_condition'][0]['precipMM']}mm
   Pressure: ${data['current_condition'][0]['pressure']}mb
   UV index: ${data['current_condition'][0]['uvIndex']}
   Visibility: ${data['current_condition'][0]['visibility']}%
-  Description: ${data['current_condition'][0]['weatherDesc'][0]['value']}. 
+  Description: ${data['current_condition'][0]['weatherDesc'][0]['value']}
   `;
 
     return formattedResult;
