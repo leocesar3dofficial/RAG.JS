@@ -93,7 +93,7 @@ async function generateResponse(query, toolResults) {
     ${JSON.stringify(chatMessages, null, 2)}
     Tool results (if any):
     ${toolResults.join('\n')}
-    Please answer the following question considering the provided information (if any):
+    Please answer the following question considering only the provided tool results (if any):
     ${query}
   `;
 
@@ -101,7 +101,7 @@ async function generateResponse(query, toolResults) {
     return await ollama.generate({
       model: mainModel,
       system:
-        'You are a helpful assistant and nly answer based on the provided information.',
+        'You are a data analyst specialized in extracting insights from the provided information. Use only the returned results to generate your response.',
       prompt: chatQuery,
       stream: true,
       options: {
@@ -134,7 +134,7 @@ async function handleChat() {
 
       if (toolsResponse) {
         const cleanedResponse = cleanToolResponse(toolsResponse.response);
-        console.log(`I've decided to use the tool(s): ${cleanedResponse}\n`);
+        console.log(`I've decided to use the tool(s):\n${cleanedResponse}\n`);
         const toolResults = await executeTools(cleanedResponse);
         const stream = await generateResponse(query, toolResults);
 

@@ -2,8 +2,8 @@
   "corpusPath": "./corpus",
   "collectionName": "rag_collection",
   "embedModel": "nomic-embed-text",
-  "mainModel": "mistral-nemo",
-  "contextSize": 4096,
+  "mainModel": "llama3.1",
+  "contextSize": 8192,
   "currentTemperature": 0.1,
   "numberOfResults": 6,
   "chatMaxMessages": 16,
@@ -22,7 +22,7 @@
       "description": "Small model to use with CPU only devices. Context length of 8,192 tokens."
     },
     {
-      "name": "qwen2",
+      "name": "codegeex4",
       "description": "Good for coding and math. Context length of 128k tokens."
     },
     {
