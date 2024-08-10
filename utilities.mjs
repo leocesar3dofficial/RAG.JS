@@ -120,6 +120,7 @@ function cleanToolResponse(response) {
     .replace(/\[:/g, '[')
     .replace(/^(?!\[\s*).*$/, '[$&]')
     .replace(/],\s*$/, ']')
+    .replace(/^\[\s*\[(.*)\]\s*\]$/, '[$1]')
     .trim();
 }
 

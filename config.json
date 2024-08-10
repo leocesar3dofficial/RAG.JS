@@ -2,7 +2,7 @@
   "corpusPath": "./corpus",
   "collectionName": "rag_collection",
   "embedModel": "nomic-embed-text",
-  "mainModel": "llama3.1",
+  "mainModel": "mistral-nemo",
   "contextSize": 4096,
   "currentTemperature": 0.1,
   "numberOfResults": 6,
@@ -11,6 +11,10 @@
   "modelDescriptions": [
     {
       "name": "llama3.1",
+      "description": "General use. Context length of 128k tokens."
+    },
+    {
+      "name": "mistral-nemo",
       "description": "General use. Context length of 128k tokens."
     },
     {

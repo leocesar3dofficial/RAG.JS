@@ -38,10 +38,11 @@ async function getToolResponse(query) {
     ${query}
     You have these functions to invoke/call (call one or more if necessary):
     ${JSON.stringify(available_tools)}
-    Answer in a JSON array using this example format to invoke/call the function(s):
+    Please create an array of JSON objects based on the following schema:
     ${JSON.stringify(tools_response_format)}
     Replace the values of the function parameters with the provided information from the user query.
     Do not invoke/call one function if you don't have the necessary parameters.
+    The response must be a JSON array.
   `;
 
   try {
