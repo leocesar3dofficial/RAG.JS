@@ -54,6 +54,7 @@ async function getToolResponse(query) {
       options: {
         num_ctx: contextSize,
         temperature: currentTemperature,
+        format: 'json',
       },
     });
   } catch (error) {
