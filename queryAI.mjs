@@ -34,21 +34,21 @@ const rl = readline.createInterface({
 
 async function getToolResponse(query) {
   const toolQuery = `
-    The user query is:
-    ${query}
-    You have these functions to invoke/call (call one or more if necessary):
-    ${JSON.stringify(available_tools)}
+    The response must be a JSON array.
+    Do not include one function in the JSON array if you don't have the necessary parameters.
     Please create an array of JSON objects based on the following schema:
     ${JSON.stringify(tools_response_format)}
+    You have these functions to invoke/call (call one or more if necessary):
+    ${JSON.stringify(available_tools)}
+    The user query is:
+    ${query}
     Replace the values of the function parameters with the provided information from the user query.
-    Do not invoke/call one function if you don't have the necessary parameters.
-    The response must be a JSON array.
   `;
 
   try {
     return await ollama.generate({
       model: mainModel,
-      system: 'Please keep your answer as brief as possible.',
+      system: 'Please keep your answer as brief as possible. Do not add comments to your answer.',
       prompt: toolQuery,
       stream: false,
       options: {
@@ -96,13 +96,14 @@ async function generateResponse(query, toolResults) {
     ${toolResults.join('\n')}
     Please answer the following question considering only the provided tool results (if any):
     ${query}
+    Do not try to answer with incomplete information.
   `;
 
   try {
     return await ollama.generate({
       model: mainModel,
       system:
-        'You are a data analyst specialized in extracting insights from the provided information. Use only the returned results to generate your response.',
+        'Please give a complete and detailed answer. You are a data analyst specialized in extracting insights from the provided information. Use only the returned results to generate your response.',
       prompt: chatQuery,
       stream: true,
       options: {

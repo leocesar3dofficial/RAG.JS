@@ -2,7 +2,7 @@
   "corpusPath": "./corpus",
   "collectionName": "rag_collection",
   "embedModel": "nomic-embed-text",
-  "mainModel": "llama3.1",
+  "mainModel": "llama3.2",
   "contextSize": 8192,
   "currentTemperature": 0.1,
   "numberOfResults": 6,
@@ -11,19 +11,23 @@
   "modelDescriptions": [
     {
       "name": "llama3.1",
-      "description": "General use. Context length of 128k tokens."
+      "description": "8B. General use. Context length of 128k tokens."
     },
     {
       "name": "mistral-nemo",
-      "description": "General use. Context length of 128k tokens."
+      "description": "12B. General use. Context length of 128k tokens."
+    },
+    {
+      "name": "llama3.2",
+      "description": "3B. Small model to use with less powerful devices. Context length 128k tokens."
     },
     {
       "name": "gemma2:2b-instruct-q2_K",
-      "description": "Small model to use with CPU only devices. Context length of 8,192 tokens."
+      "description": "2B. Small model to use with CPU only devices. Context length of 8,192 tokens."
     },
     {
       "name": "codegeex4",
-      "description": "Good for coding and math. Context length of 128k tokens."
+      "description": "9B. Good for coding and math. Context length of 128k tokens."
     },
     {
       "name": "nomic-embed-text",
@@ -31,7 +35,7 @@
     },
     {
       "name": "llava",
-      "description": "Vision model, generates text description of an image. Image resolution up to 1344px in length or height."
+      "description": "7B. Vision model, generates text description of an image. Image resolution up to 1344px in length or height."
     }
   ]
 }

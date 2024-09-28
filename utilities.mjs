@@ -113,6 +113,7 @@ function formatDuration(ns) {
 
 function cleanToolResponse(response) {
   return response
+    .replace(/\[\s*{[\s\S]*?}\s*\]/, (match) => match.trim())
     .replace('```json', '')
     .replace(/```[\s\S]*$/, '')
     .replace(/^:/, '')
