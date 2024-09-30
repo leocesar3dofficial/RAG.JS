@@ -4,6 +4,7 @@ import { getConfig, capitalizeWord } from './utilities.mjs';
 import { evaluate } from 'mathjs';
 import { load } from 'cheerio';
 import { HttpsProxyAgent } from 'https-proxy-agent';
+import { query } from './db.mjs'
 
 const { embedModel, numberOfResults } = getConfig();
 
@@ -189,6 +190,15 @@ async function extractTextFromPage({ url }) {
   }
 }
 
+async function queryDB(sqlQuery) {
+  try {
+    const result = await query(sqlQuery);
+    return result.rows;
+  } catch (err) {
+    console.error('Error executing query.', err.stack);
+  }
+}
+
 export {
   available_tools,
   tools_response_format,
@@ -196,4 +206,5 @@ export {
   calculator,
   getWeather,
   extractTextFromPage,
+  queryDB,
 };

@@ -125,6 +125,13 @@ function cleanToolResponse(response) {
     .trim();
 }
 
+function cleanDBResponse(response) {
+  return response
+    .replace('```sql', '')
+    .replace(/```[\s\S]*$/, '')
+    .trim().toUpperCase();
+}
+
 function capitalizeWord(word) {
   if (!word) return '';
   return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
@@ -137,5 +144,6 @@ export {
   chunkTextBySentences,
   formatDuration,
   cleanToolResponse,
+  cleanDBResponse,
   capitalizeWord,
 };
