@@ -24,3 +24,17 @@ This directory holds the text files to be embedded.
 ```bash
  node queryAI.mjs
 ```
+Beyond the possibility of querying the vector database.You also can use several tools:
+
+- Calculator,
+- Query the contents of a given URL.
+- Get the current weather from a city name.
+
+### 4. Query the relational database with the LLM
+
+```bash
+ node queryDBNL.mjs
+```
+
+The LLM receives the database schema and the user can ask questions based on the available tables.
+
