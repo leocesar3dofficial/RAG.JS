@@ -1,11 +1,12 @@
 import readline from 'readline';
 import ollama from 'ollama';
-import { getConfig, formatDuration, cleanToolResponse } from './utilities.mjs';
+import { getConfig, formatDuration } from './utilities.mjs';
 import { queryDB } from './tools.mjs';
 import { cleanDBResponse } from './utilities.mjs'
 
 const {
   mainModel,
+  sqlModel,
   contextSize,
   currentTemperature,
   chatMaxMessages,
@@ -40,11 +41,13 @@ async function getToolResponse(query) {
     The user query is:
     ${query}
     Transform the user query in a Postgresql SQL query based on the provided database schema.
+    Prioritize the use of case insensitive SQL queries using the ILIKE operator.
+    Limit the returned records to 100.
   `;
 
   try {
     return await ollama.generate({
-      model: mainModel,
+      model: sqlModel,
       system: 'Please keep your answer as brief as possible. Do not add comments to your answer.',
       prompt: toolQuery,
       stream: false,
@@ -63,18 +66,18 @@ async function generateResponse(query, toolResult) {
   const chatQuery = `
     This is our conversation so far:
     ${JSON.stringify(chatMessages, null, 2)}
-    This the user question:
+    This is the user question:
     ${query}
-    Database result:
+    Database result based on the user question:
     ${JSON.stringify(toolResult)}
-    The database results are already displayed to the user, so you don't need to repeat it in your answer.
-    Do not try to answer with incomplete information or with your internal knowledge.
+    The database result are already displayed to the user, so you don't need to repeat it in your answer.
+    Do not answer with your internal knowledge.
   `;
 
   try {
     return await ollama.generate({
       model: mainModel,
-      system: 'Please answer the user question considering only the results from the database. The database results are always related to the user question.',
+      system: 'The database results are always related to the user question.',
       prompt: chatQuery,
       stream: true,
       options: {
