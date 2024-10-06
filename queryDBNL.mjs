@@ -63,18 +63,18 @@ async function generateResponse(query, toolResult) {
   const chatQuery = `
     This is our conversation so far:
     ${JSON.stringify(chatMessages, null, 2)}
+    This the user question:
+    ${query}
     Database result:
     ${JSON.stringify(toolResult)}
-    Please answer the user question considering only the results from the database.
-    ${query}
+    The database results are already displayed to the user, so you don't need to repeat it in your answer.
     Do not try to answer with incomplete information or with your internal knowledge.
-    Bear in mind that the database results are related to the user question.
   `;
 
   try {
     return await ollama.generate({
       model: mainModel,
-      system: 'Please give a complete and detailed answer.',
+      system: 'Please answer the user question considering only the results from the database. The database results are always related to the user question.',
       prompt: chatQuery,
       stream: true,
       options: {
@@ -107,7 +107,11 @@ async function handleChat() {
 
         if (Array.isArray(toolResult)) {
           toolResult.forEach((row, index) => {
-            console.log(`${index + 1}. ${JSON.stringify(row).replace(/[{}"]/g, ' ')}`);
+            console.log(`${index + 1}. ${JSON.stringify(row)
+              .replace(/\{|\}|"/g, '')
+              .replace(/,/g, ', ')
+              .replace(/:/g, ': ')
+              .replace(/(\b[a-z])/g, char => char.toUpperCase())}`);
           });
         } else {
           console.log("Error in the SQL expression.");
