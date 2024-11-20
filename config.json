@@ -4,9 +4,9 @@
   "embedModel": "nomic-embed-text",
   "mainModel": "llama3.1",
   "sqlModel": "codegeex4",
-  "contextSize": 4096,
-  "currentTemperature": 0.1,
-  "numberOfResults": 6,
+  "contextSize": 8192,
+  "currentTemperature": 0.7,
+  "numberOfResults": 20,
   "chatMaxMessages": 16,
   "assistantMaxMessageSize": 512,
   "modelDescriptions": [
