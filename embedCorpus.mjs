@@ -4,7 +4,7 @@ import {
   getFileText,
   getFileList,
   getConfig,
-  chunkTextBySentences,
+  chunkTextByWords,
 } from './utilities.mjs';
 import readline from 'readline';
 
@@ -44,7 +44,7 @@ rl.question('Reset the Vector Database? (y/n)', async (answer) => {
   // Process each file asynchronously
   const promises = fileList.map(async (file, fileIndex) => {
     const documentContent = getFileText(`./${file}`); // Read the file content
-    let chunks = chunkTextBySentences(documentContent, 8, 1); // Split content into chunks of n sentences with one overlaping sentence
+    let chunks = chunkTextByWords(documentContent, 200, 4); // Split content into chunks of n words with overlaping words
 
     // Process each chunk in the file
     for (const [chunkIndex, chunk] of chunks.entries()) {

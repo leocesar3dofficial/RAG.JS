@@ -3,3 +3,9 @@ node_modules/
 corpus/*
 chroma_data/
 chroma.log
+bin
+lib
+lib64
+share
+include
+pyvenv.cfg

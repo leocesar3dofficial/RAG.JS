@@ -53,6 +53,47 @@ function getConfig() {
   return JSON.parse(getFileText('config.json'));
 }
 
+function chunkTextByWords(sourceText, wordsPerChunk, overlap) {
+  if (wordsPerChunk < 2) {
+    throw new Error('The number of words per chunk must be 2 or more.');
+  }
+
+  if (overlap < 0 || overlap >= wordsPerChunk - 1) {
+    throw new Error(
+      'Overlap must be 0 or more and less than the number of words per chunk.'
+    );
+  }
+
+  const words = sourceText.split(/\s+/).filter(word => word.trim() !== '');
+
+  if (words.length === 0) {
+    console.log('Nothing to chunk');
+    return [];
+  }
+
+  const chunks = [];
+  let i = 0;
+
+  while (i < words.length) {
+    let end = Math.min(i + wordsPerChunk, words.length);
+    let chunk = words.slice(i, end).join(' ');
+
+    if (overlap > 0 && i > 0) {
+      const overlapStart = Math.max(0, i - overlap);
+      const overlapEnd = i;
+      const overlapChunk = words.slice(overlapStart, overlapEnd).join(' ');
+      chunk = overlapChunk + ' ' + chunk;
+    }
+
+    chunks.push(chunk.trim());
+
+    i += wordsPerChunk;
+  }
+
+  return chunks;
+}
+
+// Not used anymore because if the corpus does not use punctuation this function is useless. Using chunkTextByWords instead.
 function chunkTextBySentences(sourceText, sentencesPerChunk, overlap) {
   if (sentencesPerChunk < 2) {
     throw new Error('The number of sentences per chunk must be 2 or more.');
@@ -141,7 +182,7 @@ export {
   getFileList,
   getFileText,
   getConfig,
-  chunkTextBySentences,
+  chunkTextByWords,
   formatDuration,
   cleanToolResponse,
   cleanDBResponse,
