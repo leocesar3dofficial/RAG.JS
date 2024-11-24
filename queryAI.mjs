@@ -94,16 +94,15 @@ async function generateResponse(query, toolResults) {
     ${JSON.stringify(chatMessages, null, 2)}
     Tool results (if any):
     ${toolResults.join('\n')}
-    Please answer the following question considering only the provided tool results (if any):
+    Please answer the following question considering only the provided tool results:
     ${query}
-    Do not try to answer with incomplete information.
   `;
 
   try {
     return await ollama.generate({
       model: mainModel,
       system:
-        'Please give a complete and detailed answer. You are a data analyst specialized in extracting insights from the provided information. Use only the returned results to generate your response.',
+        'Please give a complete and detailed answer.',
       prompt: chatQuery,
       stream: true,
       options: {
